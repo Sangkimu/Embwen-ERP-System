@@ -4,6 +4,12 @@ if(isset($_SESSION['user'])){ header("Location: ".$_SESSION['user']['home']); ex
 $mode=$_GET['mode']??'login';
 $error=''; $success='';
 $adminRoles=['super_admin'=>'Super Administrator','admin'=>'Administrator','staff'=>'Staff'];
+$loginRoles=[
+ 'super_admin'=>'Super Administrator','admin'=>'Administrator','staff'=>'Staff',
+ 'finance_manager'=>'Finance Manager','finance_officer'=>'Finance Officer','cashier'=>'Cashier',
+ 'dean'=>'Dean','admissions_officer'=>'Admissions Officer','welfare_officer'=>'Welfare Officer','registrar'=>'Registrar',
+ 'student'=>'Student'
+];
 $homes=['admin'=>'admin/index.php','finance'=>'finance/index.php','dean'=>'dean/index.php','students'=>'student/index.php'];
 $availableAdminRoles=$adminRoles;
 $roleQuery=$pdo->query("SELECT role FROM module_users WHERE module='admin'");
@@ -38,18 +44,22 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
    }
   }
  } else {
-  $q=$pdo->prepare("SELECT * FROM module_users WHERE username=? AND status='active' LIMIT 1");
-  $q->execute([$username]); $account=$q->fetch();
+  $role=$_POST['role']??'';
+  $q=$pdo->prepare("SELECT * FROM module_users WHERE username=? AND role=? AND status='active' LIMIT 1");
+  $q->execute([$username,$role]); $account=$q->fetch();
   if($account && password_verify($password,$account['password_hash'])){
    $_SESSION['user']=['id'=>$account['user_id'],'name'=>$account['full_name'],'username'=>$account['username'],'module'=>$account['module'],'role'=>$account['role'],'home'=>$homes[$account['module']]];
    header('Location: '.$homes[$account['module']]); exit;
   }
-  $error='Invalid username or password.';
+  $error='The selected role or credentials are incorrect.';
  }
 }
 ?>
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=ucfirst($mode)?> | College ERP</title><link rel="stylesheet" href="assets/css/style.css"></head>
-<body class="login-page"><div class="login-card"><div class="brand center"><div class="brand-mark">VC</div><div><strong>College ERP</strong><small>Management System</small></div></div>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title><?=ucfirst($mode)?> | College ERP</title><link rel="stylesheet" href="assets/css/style.css"><style>
+.auth-shell{width:min(940px,100%);display:grid;grid-template-columns:.9fr 1.1fr;background:#fff;border:1px solid #e4e9f1;border-radius:20px;overflow:hidden;box-shadow:0 24px 70px rgba(16,43,97,.13)}.auth-intro{padding:48px 40px;background:linear-gradient(145deg,#102b61,#174a9b);color:#fff;display:flex;flex-direction:column;justify-content:space-between;min-height:590px}.auth-intro .brand{padding:0 0 30px}.auth-intro .brand small{color:#b8c9e5}.auth-intro h2{font-size:36px;line-height:1.05;margin:0 0 17px;letter-spacing:-1.5px}.auth-intro p{color:#c8d6ec;line-height:1.6;font-size:14px;margin:0}.auth-points{margin:30px 0 0;padding:0;list-style:none;color:#dce7fb;font-size:13px;line-height:2.3}.auth-points li:before{content:'✓';display:inline-grid;place-items:center;width:20px;height:20px;margin-right:9px;border-radius:50%;background:#fff;color:#174a9b;font-weight:700}.auth-form{padding:42px 44px}.auth-form .brand{display:none}.auth-form h1{margin:0 0 8px}.auth-form .muted{margin:0 0 25px;font-size:13px}.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;padding:4px;background:#f1f4f9;border-radius:10px;margin-bottom:25px}.auth-tabs a{padding:10px;text-align:center;border-radius:7px;font-size:13px;font-weight:700;color:#78849a}.auth-tabs a.active{background:#fff;color:#174a9b;box-shadow:0 2px 8px rgba(16,43,97,.08)}.auth-form form{display:grid;gap:14px}.auth-form label{font-size:12px;font-weight:700;color:#3e4d64}.auth-form input,.auth-form select{margin-top:6px}.role-hint{font-size:11px;color:#78849a;margin:-4px 0 2px}.auth-switch{font-size:12px;text-align:center;color:#78849a}.auth-switch a{color:#174a9b;font-weight:700}.auth-form .login-note{margin-top:18px;text-align:center}.auth-form .alert{margin-bottom:16px}@media(max-width:700px){.auth-shell{display:block;border-radius:14px}.auth-intro{min-height:auto;padding:30px 25px}.auth-intro h2{font-size:29px}.auth-points{display:none}.auth-form{padding:30px 25px}.login-page{padding:12px}}
+</style></head>
+<body class="login-page"><div class="auth-shell"><aside class="auth-intro"><div><div class="brand"><div class="brand-mark">VC</div><div><strong>College ERP</strong><small>Management System</small></div></div><p class="kicker">One account. One workspace.</p><h2>Everything you need, right where your role belongs.</h2><p>Choose your role, use your credentials, and we will take you directly to the right dashboard.</p><ul class="auth-points"><li>Role-based access</li><li>Personalized dashboard</li><li>Secure account sign in</li></ul></div><small>Embwen College · Management System</small></aside><section class="auth-form"><div class="brand center"><div class="brand-mark">VC</div><div><strong>College ERP</strong><small>Management System</small></div></div>
+<div class="auth-tabs"><a class="<?= $mode==='register'?'':'active' ?>" href="login.php">Sign in</a><a class="<?= $mode==='register'?'active':'' ?>" href="login.php?mode=register">Create account</a></div>
 <?php if($mode==='register'):?>
 <h1>Create account</h1><p class="muted">Register once, then use your username and password to sign in.</p>
 <?php else:?>
@@ -59,6 +69,6 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <?php if($mode==='register'):?>
 <form method="post"><input type="hidden" name="mode" value="register"><label>Account type<select name="module" id="module" onchange="toggleRegistrationFields()" required><option value="">Choose account type</option><?php if($availableAdminRoles):?><option value="admin">Admin module</option><?php endif;?><option value="students">Student</option></select></label><label>Full name<input name="full_name" required autocomplete="name"></label><label>Username<input name="username" required autocomplete="username"></label><label>Email <span class="muted">(optional)</span><input type="email" name="email" autocomplete="email"></label><label id="admin-role">Admin role<select name="role"><?php foreach($availableAdminRoles as $value=>$label):?><option value="<?=htmlspecialchars($value)?>"><?=htmlspecialchars($label)?></option><?php endforeach;?></select></label><label>Password<input type="password" name="password" required minlength="8" autocomplete="new-password"></label><button class="primary full">Create account</button></form><div class="login-note">Each admin role can be registered once. Student accounts use unique usernames.</div><p class="auth-switch">Already registered? <a href="login.php">Sign in</a></p>
 <?php else:?>
-<form method="post"><input type="hidden" name="mode" value="login"><label>Username<input name="username" required autocomplete="username"></label><label>Password<input type="password" name="password" required autocomplete="current-password"></label><button class="primary full">Sign in</button></form><div class="login-note">Your account determines the module dashboard and services you can access.</div><p class="auth-switch">First time here? <a href="login.php?mode=register">Create an account</a></p>
+<form method="post"><input type="hidden" name="mode" value="login"><label>Role<select name="role" required><option value="">Choose your role</option><?php foreach($loginRoles as $value=>$label):?><option value="<?=htmlspecialchars($value)?>" <?=($_POST['role']??'')===$value?'selected':''?>><?=htmlspecialchars($label)?></option><?php endforeach;?></select></label><p class="role-hint">Your role determines the dashboard you can access.</p><label>Username<input name="username" required autocomplete="username"></label><label>Password<input type="password" name="password" required autocomplete="current-password"></label><button class="primary full">Sign in securely</button></form><div class="login-note">Credentials are checked against the selected role.</div><p class="auth-switch">First time here? <a href="login.php?mode=register">Create an account</a></p>
 <?php endif;?>
-</div><script>function toggleRegistrationFields(){var module=document.getElementById('module').value;document.getElementById('admin-role').style.display=module==='admin'?'block':'none';}toggleRegistrationFields();</script></body></html>
+</section></div><script>function toggleRegistrationFields(){var module=document.getElementById('module');var role=document.getElementById('admin-role');if(module&&role){role.style.display=module.value==='admin'?'block':'none';}}toggleRegistrationFields();</script></body></html>
