@@ -17,7 +17,8 @@ function moduleServices($module, $role=null){
    'users'=>['label'=>'Users','path'=>'users.php','description'=>'Manage user accounts and access.'],
    'courses'=>['label'=>'Courses','path'=>'courses.php','description'=>'Maintain the academic catalogue.'],
    'departments'=>['label'=>'Departments','path'=>'departments.php','description'=>'Maintain college departments.'],
-   'notices'=>['label'=>'Notices','path'=>'notices.php','description'=>'Publish official announcements.']
+  'notices'=>['label'=>'Notices','path'=>'notices.php','description'=>'Publish official announcements.'],
+  'finance'=>['label'=>'Finance','path'=>'../finance/index.php','description'=>'Review payments, fees, expenses and reports.']
   ],
   'finance'=>[
    'payments'=>['label'=>'Payments','path'=>'payments.php','description'=>'Record fees and issue receipts.'],
@@ -38,7 +39,7 @@ function moduleServices($module, $role=null){
   ]
  ];
  $access=[
-  'admin'=>['super_admin'=>['users','courses','departments','notices'],'admin'=>['users','courses','departments','notices'],'staff'=>['courses','departments','notices']],
+  'admin'=>['super_admin'=>['users','courses','departments','notices','finance'],'admin'=>['users','courses','departments','notices','finance'],'staff'=>['courses','departments','notices','finance']],
   'finance'=>['finance_manager'=>['payments','fees','expenses','reports'],'finance_officer'=>['payments','fees','reports'],'cashier'=>['payments']],
     'dean'=>['dean'=>['admissions','classes','welfare','students'],'admissions_officer'=>['admissions'],'welfare_officer'=>['welfare'],'registrar'=>['admissions','classes','students']],
   'students'=>['student'=>['profile','fees','notices']]

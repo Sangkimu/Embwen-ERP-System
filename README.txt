@@ -32,3 +32,13 @@ password_verify(). Never store plaintext passwords.
 The module dashboards are intentionally separated. A user signed into Finance
 cannot access Dean/Admin/Student workspaces because each module checks the
 session module server-side.
+
+ACCOUNT SETUP
+
+First-time users can register from login.php. Admin registration provides one
+account for each admin role (super_admin, admin and staff); claimed roles are
+removed from the registration form and later users must sign in. Students can
+register unique student usernames and then sign in normally.
+
+If module_users was created before the admin role constraint was added, run the
+two ALTER TABLE statements at the top of schema_roles.sql once.
