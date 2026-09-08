@@ -2,6 +2,7 @@
 require_once "config.php";
 requireLogin();
 if(!allowed(['admin','dean'])){http_response_code(403);die("Access denied.");}
+$dashboardLink = user()['home'];
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt=$pdo->prepare("INSERT INTO students(id_no,name,course_id,status) VALUES(?,?,?,?)");
     $stmt->execute([trim($_POST['id_no']),trim($_POST['name']),$_POST['course_id'],$_POST['status']]);
@@ -12,7 +13,7 @@ $students=$pdo->query("SELECT s.*,c.course_code,c.course_name FROM students s JO
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Students | College ERP</title><link rel="stylesheet" href="assets/css/style.css"></head><body>
 <div class="app"><aside class="sidebar"><?php include "partials/sidebar.php"; ?></aside><main class="main"><header class="topbar"><button class="menu">☰</button><div class="search">⌕ <input placeholder="Search students..."></div><div class="top-actions"><div class="avatar">AD</div><div><strong>Administrator</strong><small>Super Admin</small></div></div></header>
-<section class="content"><div class="page-head"><div><p class="eyebrow">STUDENT MANAGEMENT</p><h1>Students</h1><p>Manage enrolled students and their course assignments.</p></div><button class="primary" onclick="openModal()">＋ Add Student</button></div>
+<section class="content"><div class="page-head"><div><a href="<?=htmlspecialchars($dashboardLink)?>" style="display:inline-block;margin-bottom:12px;color:#174a9b;font-size:13px;font-weight:700;">← Back to dashboard</a><p class="eyebrow">STUDENT MANAGEMENT</p><h1>Students</h1><p>Manage enrolled students and their course assignments.</p></div><button class="primary" onclick="openModal()">＋ Add Student</button></div>
 <?php if(isset($_GET['added'])): ?><div class="alert success">Student added successfully.</div><?php endif; ?>
 <section class="card"><div class="toolbar"><div class="searchbox">⌕ <input id="studentSearch" onkeyup="filterTable('studentSearch','studentTable')" placeholder="Search by name, ID or course"></div><select><option>All statuses</option><option>Active</option><option>Graduated</option><option>Withdrawn</option></select></div>
 <div class="table-wrap"><table id="studentTable"><thead><tr><th>ID No.</th><th>Student</th><th>Course</th><th>Status</th><th>Joined</th><th></th></tr></thead><tbody>
