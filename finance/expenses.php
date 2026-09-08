@@ -2,6 +2,7 @@
 require_once "../config.php";
 requireLogin();
 if(!allowed(['finance','admin'])){http_response_code(403);die("Access denied.");}
+$dashboardLink = '../' . user()['home'];
 
 $message = '';
 $messageClass = '';
@@ -110,6 +111,7 @@ $expenses = $pdo->query($query)->fetchAll();
 
             <div class="action-bar">
                 <div>
+                    <a href="<?=htmlspecialchars($dashboardLink)?>" style="display:inline-block;margin-bottom:12px;color:#174a9b;font-size:13px;font-weight:700;">← Back to dashboard</a>
                     <h1>Institutional Expense Logs</h1>
                     <p class="text-muted">Register and review expenditures across academic departments, inventory procurement, and general operating funds.</p>
                 </div>
