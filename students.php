@@ -1,5 +1,7 @@
 <?php
 require_once "config.php";
+requireLogin();
+if(!allowed(['admin','dean'])){http_response_code(403);die("Access denied.");}
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt=$pdo->prepare("INSERT INTO students(id_no,name,course_id,status) VALUES(?,?,?,?)");
     $stmt->execute([trim($_POST['id_no']),trim($_POST['name']),$_POST['course_id'],$_POST['status']]);
