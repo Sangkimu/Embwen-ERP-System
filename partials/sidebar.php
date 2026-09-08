@@ -28,7 +28,7 @@ function isNavActive($pageName, $currentPage) {
             <!-- 1. Central Command Console -->
             <li class="nav-item">
                 <a href="index.php" <?= isNavActive('index.php', $currentPage) ?>>
-                    <span class="nav-icon">📊</span> Dashboard Home
+                    <span class="nav-icon"></span> Dashboard Home
                 </a>
             </li>
 
@@ -40,14 +40,14 @@ function isNavActive($pageName, $currentPage) {
             <!-- 2. Fee Payments Ledger Manager Link Component -->
             <li class="nav-item">
                 <a href="payments.php" <?= isNavActive('payments.php', $currentPage) ?>>
-                    <span class="nav-icon">💰</span> Payments Ledger
+                    <span class="nav-icon"></span> Payments Ledger
                 </a>
             </li>
 
             <!-- 3. Dynamic Fee Structure Setup Configuration Configurations -->
             <li class="nav-item">
                 <a href="fee_structure.php" <?= isNavActive('fee_structure.php', $currentPage) ?>>
-                    <span class="nav-icon">📝</span> Billing Blueprints
+                    <span class="nav-icon"></span> Billing Blueprints
                 </a>
             </li>
 
@@ -59,14 +59,14 @@ function isNavActive($pageName, $currentPage) {
             <!-- 4. Departmental & Workshop Expenses Control Component -->
             <li class="nav-item">
                 <a href="expenses.php" <?= isNavActive('expenses.php', $currentPage) ?>>
-                    <span class="nav-icon">📉</span> Expense Vouchers
+                    <span class="nav-icon"></span> Expense Vouchers
                 </a>
             </li>
 
             <!-- 5. Procurement and Vendor Invoices Portal Section -->
             <li class="nav-item">
                 <a href="suppliers.php" <?= isNavActive('suppliers.php', $currentPage) ?>>
-                    <span class="nav-icon">🏭</span> Vendor Portals
+                    <span class="nav-icon"></span> Vendor Portals
                 </a>
             </li>
 
@@ -78,7 +78,7 @@ function isNavActive($pageName, $currentPage) {
             <!-- 6. Real-time Arrears Lists & Government Balances Compilation Ledgers -->
             <li class="nav-item">
                 <a href="reports.php" <?= isNavActive('reports.php', $currentPage) ?>>
-                    <span class="nav-icon">📋</span> Financial Reports
+                    <span class="nav-icon"></span> Financial Reports
                 </a>
             </li>
         </ul>
@@ -91,7 +91,7 @@ function isNavActive($pageName, $currentPage) {
             <span style="font-size: 11px; color: #cbd5e0;">Clerk ID: #<?= htmlspecialchars(user()['admin_id'] ?? '1') ?></span>
         </div>
         <a href="../logout.php" title="Sign Out Session" style="color: #fc8181; text-decoration: none; font-size: 16px; transition: transform 0.2s; display: inline-block;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-            🚪
+            
         </a>
     </div>
 </div>
