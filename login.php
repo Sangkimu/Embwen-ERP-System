@@ -46,9 +46,11 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  } else {
   $q=$pdo->prepare("SELECT * FROM module_users WHERE username=? AND status='active' LIMIT 1");
   $q->execute([$username]); $account=$q->fetch();
-  if($account && password_verify($password,$account['password_hash'])){
-   $_SESSION['user']=['id'=>$account['user_id'],'name'=>$account['full_name'],'username'=>$account['username'],'module'=>$account['module'],'role'=>$account['role'],'home'=>$homes[$account['module']]];
-   header('Location: '.$homes[$account['module']]); exit;
+  $module=strtolower(trim($account['module']??''));
+  if($account && password_verify($password,$account['password_hash']) && isset($homes[$module])){
+   $home=$module==='admin'?'admin/index.php':$homes[$module];
+   $_SESSION['user']=['id'=>$account['user_id'],'name'=>$account['full_name'],'username'=>$account['username'],'module'=>$module,'role'=>$account['role'],'home'=>$home];
+   header('Location: '.$home); exit;
   }
   $error='Invalid username or password.';
  }

@@ -1,4 +1,5 @@
 function openModal(){document.getElementById('studentModal').classList.add('show')}
 function closeModal(){let m=document.getElementById('studentModal');if(m)m.classList.remove('show')}
 function filterTable(inputId,tableId){let q=document.getElementById(inputId).value.toLowerCase();document.querySelectorAll('#'+tableId+' tbody tr').forEach(r=>r.style.display=r.innerText.toLowerCase().includes(q)?'':'none')}
+function togglePasswordVisibility(button){var input=document.getElementById(button.dataset.passwordTarget);if(!input){return;}var isVisible=input.type==='text';input.type=isVisible?'password':'text';button.textContent=isVisible?'Show':'Hide';button.setAttribute('aria-label',isVisible?'Show password':'Hide password');button.setAttribute('aria-pressed',String(!isVisible));}
 document.addEventListener('click',e=>{if(e.target.classList.contains('modal'))closeModal()});

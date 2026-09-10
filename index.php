@@ -3,8 +3,20 @@ require_once "config.php"; // Load session managers and database connection conf
 
 // Native PHP Session parameter safeguard: 
 // Checks if the user is already authenticated. If yes, it completely bypasses the gate.
+if (isset($_SESSION['user']['home'])) {
+    header("Location: " . $_SESSION['user']['home']);
+    exit;
+}
 if (isset($_SESSION['user_id']) || isset($_SESSION['username'])) {
-    header("Location: finance/index.php"); 
+    $_SESSION['user'] = [
+        'id'       => $_SESSION['user_id'] ?? null,
+        'name'     => $_SESSION['name'] ?? $_SESSION['username'],
+        'username' => $_SESSION['username'] ?? '',
+        'module'   => 'admin',
+        'role'     => $_SESSION['role'] ?? 'admin',
+        'home'     => 'admin/index.php'
+    ];
+    header("Location: admin/index.php");
     exit;
 }
 
@@ -26,9 +38,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $_SESSION['username']  = $user['username'];
             $_SESSION['name']      = $user['full_name'];
             $_SESSION['role']      = $user['role'];
-            $_SESSION['module']    = 'finance'; // Sets standard workspace context
+            $_SESSION['module']    = 'admin';
+            $_SESSION['user']      = [
+                'id'       => $user['admin_id'],
+                'name'     => $user['full_name'],
+                'username' => $user['username'],
+                'module'   => 'admin',
+                'role'     => $user['role'],
+                'home'     => 'admin/index.php'
+            ];
             
-            header("Location: finance/index.php");
+            header("Location: admin/index.php");
             exit;
         } else {
             $error = "Invalid credential combinations or account is deactivated.";
@@ -53,6 +73,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         .form-group { margin-bottom: 20px; display: flex; flex-direction: column; }
         .form-group label { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #4a5568; margin-bottom: 6px; letter-spacing: 0.5px; }
         .form-control { padding: 12px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; background: #f7fafc; }
+        .password-field { position: relative; display: flex; }
+        .password-field .form-control { width: 100%; padding-right: 62px; }
+        .password-toggle { position: absolute; top: 1px; right: 1px; bottom: 1px; border: 0; background: transparent; color: #1e3d73; cursor: pointer; font-size: 11px; font-weight: 700; padding: 0 12px; }
         .form-control:focus { border-color: #1e3d73; outline: none; background: #fff; }
         .btn-submit { background: #1e3d73; color: white; border: none; padding: 12px; border-radius: 6px; font-weight: 700; width: 100%; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; font-size: 14px; margin-top: 10px; transition: background 0.2s; }
         .btn-submit:hover { background: #162e58; }
@@ -79,12 +102,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         <div class="form-group">
             <label>Account Password</label>
-            <input type="password" class="form-control" name="password" placeholder="••••••••" required>
+            <div class="password-field">
+                <input id="gateway-password" type="password" class="form-control" name="password" placeholder="••••••••" required>
+                <button type="button" class="password-toggle" data-password-target="gateway-password" onclick="togglePasswordVisibility(this)" aria-label="Show password" aria-pressed="false">Show</button>
+            </div>
         </div>
 
         <button type="submit" class="btn-submit">Secure Authorization Login</button>
     </form>
 </div>
+<script src="assets/js/app.js"></script>
 
 </body>
 </html>
