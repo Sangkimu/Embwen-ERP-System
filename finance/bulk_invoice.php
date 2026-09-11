@@ -131,7 +131,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     <main class="main">
         <header class="topbar">
             <div class="module-tag">Workspace / Finance / <b>Bulk Billing Engine</b></div>
-            <div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div>
+            <div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div><div class="topbar-logo"><div class="brand-mark">VC</div><span>College ERP</span></div>
         </header>
         
         <section class="content">

@@ -115,7 +115,7 @@ $purchaseOrders = $pdo->query("
     <main class="main">
         <header class="topbar">
             <div class="module-tag">Workspace / <b>Procurement Portal</b></div>
-            <div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div>
+            <div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div><div class="topbar-logo"><div class="brand-mark">VC</div><span>College ERP</span></div>
         </header>
         
         <section class="content">

@@ -29,6 +29,7 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, d.depa
 <div class="app">
     <aside class="sidebar"><?php include "../partials/sidebar.php"; ?></aside>
     <main class="main">
+        <header class="topbar"><div class="module-tag">Workspace / <b>Courses</b></div><div class="topbar-logo"><div class="brand-mark">VC</div><span>College ERP</span></div></header>
         <div class="card">
             <h1>Courses</h1>
             <p class="text-muted">Academic courses available in the college registry.</p>

@@ -1,6 +1,11 @@
 <?php
 require_once "config.php";
-if(isset($_SESSION['user'])){ header("Location: ".$_SESSION['user']['home']); exit; }
+$homes=['admin'=>'admin/index.php','finance'=>'finance/index.php','dean'=>'dean/index.php','students'=>'student/index.php'];
+if(isset($_SESSION['user'])){
+ $home=$_SESSION['user']['home']??($homes[$_SESSION['user']['module']??'']??null);
+ if($home!==null){ header("Location: ".$home); exit; }
+ unset($_SESSION['user']);
+}
 $mode=$_GET['mode']??'login';
 $error=''; $success='';
 $adminRoles=['super_admin'=>'Super Administrator','admin'=>'Administrator','staff'=>'Staff'];
@@ -10,7 +15,6 @@ $moduleRoles=[
  'dean'=>['dean'=>'Dean','admissions_officer'=>'Admissions Officer','welfare_officer'=>'Welfare Officer','registrar'=>'Registrar'],
  'students'=>['student'=>'Student']
 ];
-$homes=['admin'=>'admin/index.php','finance'=>'finance/index.php','dean'=>'dean/index.php','students'=>'student/index.php'];
 $availableAdminRoles=$adminRoles;
 $roleQuery=$pdo->query("SELECT role FROM module_users WHERE module='admin'");
 foreach($roleQuery as $registeredRole){ unset($availableAdminRoles[$registeredRole['role']]); }

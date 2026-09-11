@@ -102,6 +102,7 @@ $expenses = $pdo->query($query)->fetchAll();
                 <div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div>
                 <?=htmlspecialchars(user()['name'])?>
             </div>
+            <div class="topbar-logo"><div class="brand-mark">VC</div><span>College ERP</span></div>
         </header>
         
         <section class="content">

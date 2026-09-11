@@ -27,6 +27,7 @@ $notices = $pdo->query("SELECT n.notice_id, n.title, n.content, n.posted_on, u.f
 <div class="app">
     <aside class="sidebar"><?php include "../partials/sidebar.php"; ?></aside>
     <main class="main">
+        <header class="topbar"><div class="module-tag">Workspace / <b>Notices</b></div><div class="topbar-logo"><div class="brand-mark">VC</div><span>College ERP</span></div></header>
         <div class="card">
             <h1>Notice Bulletin</h1>
             <p class="text-muted">Published notices for the college community.</p>

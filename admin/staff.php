@@ -33,6 +33,7 @@ $users = $pdo->query("SELECT admin_id, username, full_name, role, email, status,
 <div class="app">
     <aside class="sidebar"><?php include "../partials/sidebar.php"; ?></aside>
     <main class="main">
+        <header class="topbar"><div class="module-tag">Workspace / <b>Staff Accounts</b></div><div class="topbar-logo"><div class="brand-mark">VC</div><span>College ERP</span></div></header>
         <div class="card">
             <h1>Staff Accounts</h1>
             <p class="text-muted">Manage admin and staff user accounts for the ERP.</p>

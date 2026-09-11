@@ -29,6 +29,7 @@ $departments = $pdo->query("SELECT department_id, department_name, created_at FR
 <div class="app">
     <aside class="sidebar"><?php include "../partials/sidebar.php"; ?></aside>
     <main class="main">
+        <header class="topbar"><div class="module-tag">Workspace / <b>Departments</b></div><div class="topbar-logo"><div class="brand-mark">VC</div><span>College ERP</span></div></header>
         <div class="card">
             <h1>Departments</h1>
             <p class="text-muted">Academic departments registered in the system.</p>

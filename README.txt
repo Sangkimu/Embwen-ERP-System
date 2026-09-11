@@ -29,6 +29,24 @@ Students: student
 For production, create accounts using password_hash() and verify with
 password_verify(). Never store plaintext passwords.
 
+M-PESA DARAJA SANDBOX SETUP
+
+Run database_payment_integrations.sql once against vocational_erp. Configure
+these environment variables for Apache/PHP before using M-Pesa STK Push:
+
+MPESA_CONSUMER_KEY
+MPESA_CONSUMER_SECRET
+MPESA_SHORTCODE
+MPESA_PASSKEY
+MPESA_CALLBACK_URL=https://your-public-host.example/Embwen%20ERP%20system/finance/mpesa_callback.php
+MPESA_BASE_URL=https://sandbox.safaricom.co.ke
+
+The callback URL must be publicly reachable over HTTPS; localhost alone cannot
+receive Safaricom callbacks. Successful callbacks create the fee_payments row
+and use the M-Pesa receipt number as the ledger receipt. Equity Bank is
+currently supported as a manually reconciled bank channel until Equity API
+credentials and its transaction contract are provided.
+
 The module dashboards are intentionally separated. A user signed into Finance
 cannot access Dean/Admin/Student workspaces because each module checks the
 session module server-side.

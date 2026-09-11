@@ -6,6 +6,32 @@ if(!allowed(['finance','admin'])){http_response_code(403);die("Access denied.");
 $message = '';
 $messageClass = '';
 
+if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST['action'] ?? '') === 'initiate_mpesa') {
+    $studentId = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
+    $structureId = filter_input(INPUT_POST, 'fee_structure_id', FILTER_VALIDATE_INT);
+    $amountPaid = filter_input(INPUT_POST, 'amount_paid', FILTER_VALIDATE_FLOAT);
+    $phone = trim($_POST['phone_number'] ?? '');
+    $accountReference = 'ERP-' . $studentId . '-' . $structureId . '-' . date('ymdHis');
+    try {
+        if (!$studentId || !$structureId || $amountPaid <= 0 || $phone === '') {
+            throw new Exception('Student, fee item, amount, and phone number are required.');
+        }
+        $response = mpesaStkPush($amountPaid, $phone, $accountReference, 'College fee payment');
+        if (($response['ResponseCode'] ?? '1') !== '0' || empty($response['CheckoutRequestID'])) {
+            throw new Exception($response['ResponseDescription'] ?? 'M-Pesa did not accept the payment request.');
+        }
+        $normalizedPhone = preg_replace('/\D+/', '', $phone);
+        if (substr($normalizedPhone, 0, 1) === '0') $normalizedPhone = '254' . substr($normalizedPhone, 1);
+        $stmt = $pdo->prepare('INSERT INTO mpesa_transactions (student_id,fee_structure_id,amount,phone_number,account_reference,checkout_request_id,merchant_request_id) VALUES (?,?,?,?,?,?,?)');
+        $stmt->execute([$studentId, $structureId, $amountPaid, $normalizedPhone, $accountReference, $response['CheckoutRequestID'], $response['MerchantRequestID'] ?? null]);
+        $message = 'STK Push sent. The payment will appear in the ledger after Safaricom confirms it.';
+        $messageClass = 'alert-success';
+    } catch (Throwable $e) {
+        $message = 'M-Pesa request failed: ' . $e->getMessage();
+        $messageClass = 'alert-danger';
+    }
+}
+
 // --- 1. CORE PAYMENT RECEIPT POSTING ENGINE ---
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['action'] === 'record_payment') {
     $studentId     = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
@@ -15,7 +41,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     $receiptNo     = trim($_POST['receipt_no'] ?? '');
     $receivedBy    = null;
 
-    $validMethods = ['cash','bank','online'];
+    $validMethods = ['cash','bank','online','equity_bank'];
 
     if ($studentId && $structureId && $amountPaid > 0 && !empty($receiptNo) && in_array($paymentMethod, $validMethods, true)) {
         try {
@@ -85,6 +111,8 @@ $dashboardLink = '../' . user()['home'];
         .badge-cash { background: #edf2f7; color: #4a5568; }
         .badge-bank_deposit { background: #feebc8; color: #c05621; }
         .badge-mpesa_paybill { background: #c6f6d5; color: #22543d; }
+        .badge-mpesa { background: #c6f6d5; color: #22543d; }
+        .badge-equity_bank { background: #e9d8fd; color: #553c9a; }
         .badge-hef_capitation { background: #e9d8fd; color: #553c9a; }
         .badge-cdf_bursary { background: #feebc8; color: #9c4221; }
         .badge-county_bursary { background: #ebf8ff; color: #2b6cb0; }
@@ -116,6 +144,7 @@ $dashboardLink = '../' . user()['home'];
                 <div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div>
                 <?=htmlspecialchars(user()['name'])?>
             </div>
+            <div class="topbar-logo"><div class="brand-mark">VC</div><span>College ERP</span></div>
         </header>
         
         <section class="content">
@@ -147,7 +176,7 @@ $dashboardLink = '../' . user()['home'];
                     </thead>
                     <tbody>
                         <?php if (empty($payments)): ?>
-                            <tr><td colspan="7" style="text-align: center; color: #a0aec0; padding: 30px;">No operational payment entries found in database ledgers.</td></tr>
+                            <tr><td colspan="8" style="text-align: center; color: #a0aec0; padding: 30px;">No operational payment entries found in database ledgers.</td></tr>
                         <?php else: ?>
                             <?php foreach($payments as $p): ?>
                                 <tr>
@@ -159,6 +188,7 @@ $dashboardLink = '../' . user()['home'];
                                     </td>
                                     <td><small class="badge" style="background:#ebf8ff; color:#2b6cb0; text-transform:none; font-weight:600;"><?= htmlspecialchars($p['course_code']) ?> - <?= str_replace('_', ' ', ucfirst($p['fee_type'])) ?></small></td>
                                     <td><span class="badge badge-<?= htmlspecialchars($p['payment_method']) ?>"><?= htmlspecialchars(ucfirst($p['payment_method'])) ?></span></td>
+                                    <td><?= money($p['amount_paid']) ?></td>
                                     <td><?= htmlspecialchars($p['clerk_name']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -174,15 +204,34 @@ $dashboardLink = '../' . user()['home'];
     <div class="modal-content">
         <h2>Record Payment</h2>
         <form method="post">
-            <input type="hidden" name="action" value="record_payment">
+            <input type="hidden" name="action" id="paymentAction" value="record_payment">
             <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name']) ?></option><?php endforeach; ?></select></div>
             <div class="form-group"><label for="fee_structure_id">Fee structure</label><select class="form-control" id="fee_structure_id" name="fee_structure_id" required><option value="">Select fee item</option><?php foreach($feeStructures as $fee): ?><option value="<?= (int)$fee['fee_structure_id'] ?>"><?= htmlspecialchars($fee['course_code'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')') ?></option><?php endforeach; ?></select></div>
-            <div class="form-row"><div class="form-group"><label for="amount_paid">Amount paid</label><input class="form-control" id="amount_paid" name="amount_paid" type="number" min="0.01" step="0.01" required></div><div class="form-group"><label for="payment_method">Payment method</label><select class="form-control" id="payment_method" name="payment_method" required><option value="">Select method</option><option value="cash">Cash</option><option value="bank">Bank</option><option value="online">Online</option></select></div></div>
-            <div class="form-group"><label for="receipt_no">Receipt number</label><input class="form-control" id="receipt_no" name="receipt_no" maxlength="50" required></div>
-            <div class="modal-footer"><button type="button" class="btn-secondary" onclick="toggleModal(false)">Cancel</button><button type="submit" class="btn-primary">Save payment</button></div>
+            <div class="form-row"><div class="form-group"><label for="amount_paid">Amount paid</label><input class="form-control" id="amount_paid" name="amount_paid" type="number" min="0.01" step="0.01" required></div><div class="form-group"><label for="payment_method">Payment method</label><select class="form-control" id="payment_method" name="payment_method" required><option value="">Select method</option><option value="cash">Cash</option><option value="bank">Bank</option><option value="equity_bank">Equity Bank</option><option value="online">Online</option><option value="mpesa">M-Pesa STK Push</option></select></div></div>
+            <div class="form-group" id="phoneGroup" style="display:none"><label for="phone_number">M-Pesa phone number</label><input class="form-control" id="phone_number" name="phone_number" type="tel" placeholder="0712345678"></div>
+            <div class="form-group" id="receiptGroup"><label for="receipt_no">Receipt number</label><input class="form-control" id="receipt_no" name="receipt_no" maxlength="50"></div>
+            <div class="modal-footer"><button type="button" class="btn-secondary" onclick="toggleModal(false)">Cancel</button><button type="submit" class="btn-primary" id="submitPayment">Save payment</button></div>
         </form>
     </div>
 </div>
-<script>function toggleModal(show){document.getElementById('paymentModal').classList.toggle('active',show);}</script>
+<script>
+function toggleModal(show){document.getElementById('paymentModal').classList.toggle('active',show);}
+const method=document.getElementById('payment_method');
+const action=document.getElementById('paymentAction');
+const phoneGroup=document.getElementById('phoneGroup');
+const phone=document.getElementById('phone_number');
+const receiptGroup=document.getElementById('receiptGroup');
+const receipt=document.getElementById('receipt_no');
+const submit=document.getElementById('submitPayment');
+method.addEventListener('change',function(){
+ const mpesa=this.value==='mpesa';
+ action.value=mpesa?'initiate_mpesa':'record_payment';
+ phoneGroup.style.display=mpesa?'flex':'none';
+ receiptGroup.style.display=mpesa?'none':'flex';
+ phone.required=mpesa;
+ receipt.required=!mpesa;
+ submit.textContent=mpesa?'Send STK Push':'Save payment';
+});
+</script>
 </body>
 </html>

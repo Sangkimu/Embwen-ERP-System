@@ -60,6 +60,7 @@ if ($userRole === 'super_admin' || $userRole === 'admin') {
                 <div class="avatar"><?= strtoupper(substr(user()['name'], 0, 2)) ?></div>
                 <?= htmlspecialchars(user()['name']) ?> <small style="margin-left:5px; color:#718096;">(<?= ucfirst($userRole) ?>)</small>
             </div>
+            <div class="topbar-logo"><div class="brand-mark">VC</div><span>College ERP</span></div>
         </header>
 
         <section class="content">
