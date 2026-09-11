@@ -130,6 +130,7 @@ $dashboardLink = '../' . user()['home'];
         .form-group label { margin-bottom: 6px; font-size: 12px; font-weight: 700; color: #4a5568; text-transform: uppercase; letter-spacing: 0.3px; }
         .form-control { width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: #f7fafc; }
         .form-control:focus { border-color: #1e3d73; outline: none; background: #fff; }
+        .field-hint { display: block; margin-top: 5px; color: #718096; font-size: 11px; line-height: 1.4; }
         .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid #edf2f7; padding-top: 15px; }
         .btn-secondary { background: #e2e8f0; color: #4a5568; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
     </style>
@@ -206,10 +207,10 @@ $dashboardLink = '../' . user()['home'];
         <form method="post">
             <input type="hidden" name="action" id="paymentAction" value="record_payment">
             <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name']) ?></option><?php endforeach; ?></select></div>
-            <div class="form-group"><label for="fee_structure_id">Fee structure</label><select class="form-control" id="fee_structure_id" name="fee_structure_id" required><option value="">Select fee item</option><?php foreach($feeStructures as $fee): ?><option value="<?= (int)$fee['fee_structure_id'] ?>"><?= htmlspecialchars($fee['course_code'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')') ?></option><?php endforeach; ?></select></div>
-            <div class="form-row"><div class="form-group"><label for="amount_paid">Amount paid</label><input class="form-control" id="amount_paid" name="amount_paid" type="number" min="0.01" step="0.01" required></div><div class="form-group"><label for="payment_method">Payment method</label><select class="form-control" id="payment_method" name="payment_method" required><option value="">Select method</option><option value="cash">Cash</option><option value="bank">Bank</option><option value="equity_bank">Equity Bank</option><option value="online">Online</option><option value="mpesa">M-Pesa STK Push</option></select></div></div>
-            <div class="form-group" id="phoneGroup" style="display:none"><label for="phone_number">M-Pesa phone number</label><input class="form-control" id="phone_number" name="phone_number" type="tel" placeholder="0712345678"></div>
-            <div class="form-group" id="receiptGroup"><label for="receipt_no">Receipt number</label><input class="form-control" id="receipt_no" name="receipt_no" maxlength="50"></div>
+            <div class="form-group"><label for="fee_structure_id">Fee structure</label><select class="form-control" id="fee_structure_id" name="fee_structure_id" required><option value="">Select fee item</option><?php foreach($feeStructures as $fee): ?><option value="<?= (int)$fee['fee_structure_id'] ?>" data-amount="<?= htmlspecialchars((string)$fee['amount'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($fee['course_code'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')') ?></option><?php endforeach; ?></select><small class="field-hint" id="feeHint">Select a fee item to see its configured amount.</small></div>
+            <div class="form-row"><div class="form-group"><label for="amount_paid">Amount paid (KES)</label><input class="form-control" id="amount_paid" name="amount_paid" type="number" min="0.01" step="0.01" inputmode="decimal" autocomplete="off" required><small class="field-hint">Partial payments are allowed.</small></div><div class="form-group"><label for="payment_method">Payment method</label><select class="form-control" id="payment_method" name="payment_method" required><option value="">Select method</option><option value="cash">Cash</option><option value="bank">Bank transfer</option><option value="equity_bank">Equity Bank</option><option value="online">Online</option><option value="mpesa">M-Pesa STK Push</option></select></div></div>
+            <div class="form-group" id="phoneGroup" style="display:none"><label for="phone_number">M-Pesa phone number</label><input class="form-control" id="phone_number" name="phone_number" type="tel" inputmode="tel" autocomplete="tel" placeholder="0712345678"><small class="field-hint">The customer will receive a payment prompt on this number.</small></div>
+            <div class="form-group" id="receiptGroup"><label for="receipt_no">Receipt number</label><input class="form-control" id="receipt_no" name="receipt_no" maxlength="50" autocomplete="off" placeholder="Enter the official receipt number"></div>
             <div class="modal-footer"><button type="button" class="btn-secondary" onclick="toggleModal(false)">Cancel</button><button type="submit" class="btn-primary" id="submitPayment">Save payment</button></div>
         </form>
     </div>
@@ -217,12 +218,21 @@ $dashboardLink = '../' . user()['home'];
 <script>
 function toggleModal(show){document.getElementById('paymentModal').classList.toggle('active',show);}
 const method=document.getElementById('payment_method');
+const feeStructure=document.getElementById('fee_structure_id');
+const amount=document.getElementById('amount_paid');
+const feeHint=document.getElementById('feeHint');
 const action=document.getElementById('paymentAction');
 const phoneGroup=document.getElementById('phoneGroup');
 const phone=document.getElementById('phone_number');
 const receiptGroup=document.getElementById('receiptGroup');
 const receipt=document.getElementById('receipt_no');
 const submit=document.getElementById('submitPayment');
+feeStructure.addEventListener('change',function(){
+ const selected=this.options[this.selectedIndex];
+ const configuredAmount=selected.dataset.amount||'';
+ feeHint.textContent=configuredAmount?'Configured fee: KES '+Number(configuredAmount).toLocaleString('en-KE',{minimumFractionDigits:2}):'Select a fee item to see its configured amount.';
+ if(configuredAmount&&!amount.value) amount.value=configuredAmount;
+});
 method.addEventListener('change',function(){
  const mpesa=this.value==='mpesa';
  action.value=mpesa?'initiate_mpesa':'record_payment';
