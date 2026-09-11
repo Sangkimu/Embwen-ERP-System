@@ -5,9 +5,7 @@ requireLogin();
 if(!allowed(['students'])){http_response_code(403);die("Access denied.");}
 
 // 1. Fetch current profile data to evaluate pre-existing parameters
-$st=$pdo->prepare("SELECT s.* FROM students s JOIN student_accounts sa ON sa.student_id=s.student_id WHERE sa.username=? LIMIT 1");
-$st->execute([user()['username']]);
-$student=$st->fetch();
+$student=currentStudent($pdo);
 
 if(!$student) { die("System Profile mismatch error."); }
 

@@ -10,6 +10,18 @@ try {
 function requireLogin(){ if(empty($_SESSION['user'])){ header("Location: login.php"); exit; } }
 function user(){ return $_SESSION['user'] ?? null; }
 function allowed($modules=[]){ return in_array(user()['module'] ?? '', $modules, true) || (user()['role'] ?? '')==='super_admin'; }
+function studentProfileComplete($student){
+ return is_array($student) && !empty($student['id_no']) && !empty($student['phone']) && !empty($student['email']) && !empty($student['gender']);
+}
+function requireCompleteStudentProfile($student){
+ if(!studentProfileComplete($student)){ header('Location: complete_profile.php?required=1'); exit; }
+}
+function currentStudent($pdo){
+ $username=(string)(user()['username']??'');
+ $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s JOIN courses c ON c.course_id=s.course_id LEFT JOIN student_accounts sa ON sa.student_id=s.student_id AND sa.username=? WHERE sa.student_id IS NOT NULL OR s.id_no=? LIMIT 1");
+ $stmt->execute([$username,$username]);
+ return $stmt->fetch() ?: null;
+}
 function money($n){return "KES ".number_format((float)$n,2);}
 function mpesaConfig(){
  return [
