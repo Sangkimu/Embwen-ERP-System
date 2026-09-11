@@ -85,7 +85,7 @@ $cases_list = $pdo->query("
 <div class="app">
     <aside class="sidebar"><?php include "../partials/sidebar.php"; ?></aside>
     <main class="main">
-        <header class="topbar"><div class="module-tag">Workspace / <b>Welfare & Discipline</b></div></header>
+        <header class="topbar"><div class="module-tag">Workspace / <b>Welfare & Discipline</b></div><img class="header-logo" src="../Images/logo.gif" alt="Polytechnic ERP logo"></header>
         <section class="content">
             
             <div class="page-head">
@@ -160,6 +160,19 @@ $cases_list = $pdo->query("
                                             <span class="badge-closed">Resolved</span>
                                         <?php endif; ?>
                                     </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php else: ?>
+                    <p class="text-muted">No welfare or disciplinary cases have been recorded.</p>
+                <?php endif; ?>
+            </section>
+        </section>
+    </main>
+</div>
+</body>
+</html>
                                     <td>
                                         <?php if($case['status'] === 'open'): ?>
                                             <a href="welfare.php?action=close&id=<?= $case['welfare_id'] ?>" 

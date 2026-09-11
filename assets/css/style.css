@@ -2,3 +2,4 @@
 .topbar-logo{display:none}.topbar:after{content:'';display:block;margin-left:auto;width:48px;height:48px;background:url('../../Images/logo.gif') center/contain no-repeat;flex:0 0 48px}
 .brand-mark{width:42px;height:42px;border-radius:11px;background:#fff url('../../Images/logo.gif') center/contain no-repeat;color:transparent;display:grid;place-items:center;font-weight:800;text-indent:-9999px}
 .sidebar-brand:before{content:'';display:block;width:58px;height:58px;margin-bottom:8px;background:url('../../Images/logo.gif') center/contain no-repeat}.sidebar-brand h4{font-size:0!important}
+.header-logo{display:block;width:48px;height:48px;object-fit:contain;margin-left:auto}.topbar:has(.header-logo):after{display:none}

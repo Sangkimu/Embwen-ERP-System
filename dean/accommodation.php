@@ -64,7 +64,7 @@ $allocations = $pdo->query("SELECT ha.*, s.name AS student_name FROM hostel_allo
 <div class="app">
     <aside class="sidebar"><?php include "../partials/sidebar.php"; ?></aside>
     <main class="main">
-        <header class="topbar"><div class="module-tag">Workspace / <b>Accommodation</b></div></header>
+        <header class="topbar"><div class="module-tag">Workspace / <b>Accommodation</b></div><img class="header-logo" src="../Images/logo.gif" alt="Polytechnic ERP logo"></header>
         <section class="content">
             
             <div class="page-head">
