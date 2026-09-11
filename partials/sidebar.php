@@ -33,10 +33,10 @@ function isNavActive($pageName, $currentPage) {
             <?php if ($userModule === 'students'): ?>
                 <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 5px; padding-left: 12px;">Student Services</li>
                 <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard</a></li>
-                <li class="nav-item"><a href="index.php#account-information" <?= isNavActive('student-profile', $currentPage) ?>><span class="nav-icon">👤</span> My Profile</a></li>
-                <li class="nav-item"><a href="index.php#fee-balance" <?= isNavActive('student-fees', $currentPage) ?>><span class="nav-icon">💳</span> My Fees</a></li>
-                <li class="nav-item"><a href="index.php#coursework" <?= isNavActive('student-coursework', $currentPage) ?>><span class="nav-icon">📚</span> Coursework & Marks</a></li>
-                <li class="nav-item"><a href="index.php#notices" <?= isNavActive('student-notices', $currentPage) ?>><span class="nav-icon">📣</span> Notices <span style="float:right; color:#cbd5e0;">View</span></a></li>
+                <li class="nav-item"><a href="profile.php" <?= isNavActive('profile.php', $currentPage) ?>><span class="nav-icon">👤</span> My Profile</a></li>
+                <li class="nav-item"><a href="fees.php" <?= isNavActive('fees.php', $currentPage) ?>><span class="nav-icon">💳</span> My Fees</a></li>
+                <li class="nav-item"><a href="coursework.php" <?= isNavActive('coursework.php', $currentPage) ?>><span class="nav-icon">📚</span> Coursework & Marks</a></li>
+                <li class="nav-item"><a href="notices.php" <?= isNavActive('notices.php', $currentPage) ?>><span class="nav-icon">📣</span> Notices <span style="float:right; color:#cbd5e0;">View</span></a></li>
             <?php else: ?>
             
             <!-- 1. Central Dashboard Entry (Accessible to All Roles) -->

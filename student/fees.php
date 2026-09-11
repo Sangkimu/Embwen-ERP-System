@@ -7,6 +7,15 @@ if(!allowed(['students'])){http_response_code(403);die("Access denied.");}
 $st=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s JOIN student_accounts sa ON sa.student_id=s.student_id JOIN courses c ON c.course_id=s.course_id WHERE sa.username=? LIMIT 1");
 $st->execute([user()['username']]);$student=$st->fetch();
 
+// --- MANDATORY PROFILE COMPLETION GATEWAY CHECK ---
+if ($student) {
+    if (empty($student['id_no']) || empty($student['phone']) || empty($student['email']) || empty($student['gender'])) {
+        header("Location: complete_profile.php");
+        exit;
+    }
+}
+// --- END PROFILE COMPLETION GATEWAY CHECK ---
+
 $statement = [];
 $outstanding_balance = 0;
 $current_invoice = 0;
