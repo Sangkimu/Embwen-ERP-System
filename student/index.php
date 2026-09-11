@@ -48,9 +48,10 @@ if($student) {
 </style>
 </head><body><div class="app"><aside class="sidebar"><?php include "../partials/sidebar.php";?></aside><main class="main"><header class="topbar"><div class="module-tag">Workspace / <b>Student Portal</b></div><div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div></header><section class="content"><div class="page-head"><div><p class="eyebrow">STUDENT PORTAL — <?=htmlspecialchars($active_sem_name)?></p><h1>Welcome, <?=htmlspecialchars(user()['name'])?></h1><p>Access your student services.</p></div></div><div class="stats"><div class="stat"><span>Student ID</span><strong><?=htmlspecialchars($student['id_no']??'N/A')?></strong></div><div class="stat"><span>Course</span><strong><?=htmlspecialchars($student['course_code']??'N/A')?></strong></div><div class="stat"><span>Payment Total</span><strong><?=money($payments)?></strong></div><div class="stat"><span>Notices</span><strong><?=htmlspecialchars($notices)?></strong></div></div>
 
+<span id="notices"></span>
 <div class="grid">
     <!-- Left Column: Lean Polytechnic Academics and Hands-on Workshop Tracking -->
-    <section class="card">
+    <section class="card" id="coursework">
         <h2>Semester Coursework & Practicals</h2>
         <?php if(!empty($course_units)): ?>
             <table class="poly-table">
@@ -84,7 +85,7 @@ if($student) {
     </section>
 
     <!-- Right Column: Account Meta details and Semester Statements -->
-    <section class="card">
+    <section class="card" id="fee-balance">
         <h2>Semester Fee Reconciliation</h2>
         <div class="balance-highlight">
             <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: bold; color: #991b1b;">Outstanding Balance</span>
@@ -94,7 +95,7 @@ if($student) {
             <a href="payments/mpesa_trigger.php" class="btn-pay">Pay Fees via M-Pesa</a>
         <?php endif; ?>
 
-        <h2 style="margin-top: 30px;">Account Information</h2>
+        <h2 id="account-information" style="margin-top: 30px;">Account Information</h2>
         <div class="service"><div><b><?=htmlspecialchars($student['name']??user()['name'])?></b><small><?=htmlspecialchars($student['course_name']??'Course information unavailable')?></small></div></div>
         <div class="service"><div><b>Status</b><small><?=htmlspecialchars(ucfirst($student['status']??'Unknown'))?></small></div></div>
     </section>
