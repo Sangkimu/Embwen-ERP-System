@@ -22,94 +22,68 @@ function isNavActive($pageName, $currentPage) {
     <div>
         <!-- Branding Block Header -->
         <div class="sidebar-brand" style="margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
-            <h4 style="margin: 0; font-size: 18px; color: #ffffff; letter-spacing: 0.5px;">College ERP</h4>
+            <h4 style="margin: 0; font-size: 18px; color: #ffffff; letter-spacing: 0.5px;">Polytechnic ERP</h4>
             <small style="color: #cbd5e0; font-size: 11px; text-transform: uppercase;">
-                <?= $userModule === 'students' ? 'Student Portal' : (($userRole === 'super_admin' || $userRole === 'manager') ? 'Manager Console' : (($userRole === 'admin') ? 'Officer Workspace' : 'Clerk Panel')) ?>
+                <?= $userModule === 'students' ? 'Student Portal' : (($userRole === 'dean') ? 'Dean of Students' : (($userRole === 'lecturers') ? 'Faculty Space' : (($userRole === 'super_admin' || $userRole === 'manager') ? 'Manager Console' : (($userRole === 'admin') ? 'Officer Workspace' : 'Clerk Panel')))) ?>
             </small>
         </div>
 
         <!-- Main Navigation List Link Groups -->
         <ul class="nav-menu" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px;">
+            
+            <!-- ================= ROLE MODULE 1: STUDENTS ================= -->
             <?php if ($userModule === 'students'): ?>
                 <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-bottom: 5px; padding-left: 12px;">Student Services</li>
                 <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard</a></li>
                 <li class="nav-item"><a href="profile.php" <?= isNavActive('profile.php', $currentPage) ?>><span class="nav-icon">👤</span> My Profile</a></li>
                 <li class="nav-item"><a href="fees.php" <?= isNavActive('fees.php', $currentPage) ?>><span class="nav-icon">💳</span> My Fees</a></li>
                 <li class="nav-item"><a href="coursework.php" <?= isNavActive('coursework.php', $currentPage) ?>><span class="nav-icon">📚</span> Coursework & Marks</a></li>
-                <li class="nav-item"><a href="notices.php" <?= isNavActive('notices.php', $currentPage) ?>><span class="nav-icon">📣</span> Notices <span style="float:right; color:#cbd5e0;">View</span></a></li>
-            <?php else: ?>
+                <li class="nav-item"><a href="notices.php" <?= isNavActive('notices.php', $currentPage) ?>><span class="nav-icon">📣</span> Notices</a></li>
             
-            <!-- 1. Central Dashboard Entry (Accessible to All Roles) -->
-            <li class="nav-item">
-                <a href="index.php" <?= isNavActive('index.php', $currentPage) ?>>
-                    <span class="nav-icon">📊</span> Dashboard Home
-                </a>
-            </li>
+            <!-- ================= ROLE MODULE 2: DEAN OF STUDENTS ================= -->
+            <?php elseif ($userRole === 'dean'): ?>
+                <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard Home</a></li>
+                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Welfare & Intake</li>
+                <li class="nav-item"><a href="admissions.php" <?= isNavActive('admissions.php', $currentPage) ?>><span class="nav-icon">📝</span> Admissions Approval</a></li>
+                <li class="nav-item"><a href="allocations.php" <?= isNavActive('allocations.php', $currentPage) ?>><span class="nav-icon">🏫</span> Class Allocations</a></li>
+                <li class="nav-item"><a href="accommodation.php" <?= isNavActive('accommodation.php', $currentPage) ?>><span class="nav-icon">🏢</span> Hostels & Accom.</a></li>
+                <li class="nav-item"><a href="welfare.php" <?= isNavActive('welfare.php', $currentPage) ?>><span class="nav-icon">🛡️</span> Student Welfare</a></li>
 
-            <!-- DYNAMIC REVENUE SECTION (Visible to All, but content is filtered inside) -->
-            <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">
-                Revenue & Collections
-            </li>
+            <!-- ================= ROLE MODULE 3: LECTURERS / FACULTY ================= -->
+            <?php elseif ($userRole === 'lecturers'): ?>
+                <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard Home</a></li>
+                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Academic Evaluation</li>
+                <li class="nav-item"><a href="lecturer_grades.php" <?= isNavActive('lecturer_grades.php', $currentPage) ?>><span class="nav-icon">📚</span> Workshop Gradebook</a></li>
 
-            <!-- 2. Fee Payments Ledger (All Roles: Clerks post entries, Officers/Managers supervise) -->
-            <li class="nav-item">
-                <a href="payments.php" <?= isNavActive('payments.php', $currentPage) ?>>
-                    <span class="nav-icon">💰</span> Payments Ledger
-                </a>
-            </li>
+            <!-- ================= ROLE MODULE 4: STAFF / FINANCE / ADMIN ================= -->
+            <?php else: ?>
+                <!-- Central Dashboard Entry -->
+                <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard Home</a></li>
 
-            <!-- 3. Dynamic Fee Structure Setup (Restricted: Managers & Officers configure billing blueprints) -->
-            <?php if ($userRole === 'super_admin' || $userRole === 'manager' || $userRole === 'admin'): ?>
-                <li class="nav-item">
-                    <a href="fee_structure.php" <?= isNavActive('fee_structure.php', $currentPage) ?>>
-                        <span class="nav-icon">📝</span> Billing Blueprints
-                    </a>
-                </li>
-            <?php endif; ?>
+                <!-- Revenue Subsections -->
+                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Revenue & Collections</li>
+                <li class="nav-item"><a href="payments.php" <?= isNavActive('payments.php', $currentPage) ?>><span class="nav-icon">💰</span> Payments Ledger</a></li>
 
-            <!-- 4. Bulk Invoicing Engine link (Strictly restricted to Finance Managers / Super Admins) -->
-            <?php if ($userRole === 'super_admin' || $userRole === 'manager'): ?>
-                <li class="nav-item">
-                    <a href="bulk_invoice.php" <?= isNavActive('bulk_invoice.php', $currentPage) ?>>
-                        <span class="nav-icon">⚙️</span> Bulk Invoicing Engine
-                    </a>
-                </li>
-            <?php endif; ?>
+                <?php if ($userRole === 'super_admin' || $userRole === 'manager' || $userRole === 'admin'): ?>
+                    <li class="nav-item"><a href="fee_structure.php" <?= isNavActive('fee_structure.php', $currentPage) ?>><span class="nav-icon">📝</span> Billing Blueprints</a></li>
+                <?php endif; ?>
 
-            <!-- DYNAMIC OUTFLOWS SECTION (Hidden entirely from front-desk Clerical Staff) -->
-            <?php if ($userRole === 'super_admin' || $userRole === 'manager' || $userRole === 'admin'): ?>
-                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">
-                    Outflows & Operations
-                </li>
+                <?php if ($userRole === 'super_admin' || $userRole === 'manager'): ?>
+                    <li class="nav-item"><a href="bulk_invoice.php" <?= isNavActive('bulk_invoice.php', $currentPage) ?>><span class="nav-icon">⚙️</span> Bulk Invoicing Engine</a></li>
+                <?php endif; ?>
 
-                <!-- 5. Expense Control (Officers log daily vouchers, Managers approve/audit) -->
-                <li class="nav-item">
-                    <a href="expenses.php" <?= isNavActive('expenses.php', $currentPage) ?>>
-                        <span class="nav-icon">📉</span> Expense Vouchers
-                    </a>
-                </li>
+                <!-- Outflows Subsections -->
+                <?php if ($userRole === 'super_admin' || $userRole === 'manager' || $userRole === 'admin'): ?>
+                    <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Outflows & Operations</li>
+                    <li class="nav-item"><a href="expenses.php" <?= isNavActive('expenses.php', $currentPage) ?>><span class="nav-icon">📉</span> Expense Vouchers</a></li>
+                    <li class="nav-item"><a href="suppliers.php" <?= isNavActive('suppliers.php', $currentPage) ?>><span class="nav-icon">🏭</span> Procurement Portal</a></li>
+                <?php endif; ?>
 
-                <!-- 6. Procurement Portals (Officers manage supplier details, Managers clear procurement lines) -->
-                <li class="nav-item">
-                    <a href="suppliers.php" <?= isNavActive('suppliers.php', $currentPage) ?>>
-                        <span class="nav-icon">🏭</span> Procurement Portal
-                    </a>
-                </li>
-            <?php endif; ?>
-
-            <!-- AUDITING AND INSIGHTS SECTION (Restricted: Visible to Finance Officers and Managers only) -->
-            <?php if ($userRole === 'super_admin' || $userRole === 'manager' || $userRole === 'admin'): ?>
-                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">
-                    Auditing & Insights
-                </li>
-
-                <!-- 7. Comprehensive Audit Reports & Balance Sheet Projections -->
-                <li class="nav-item">
-                    <a href="reports.php" <?= isNavActive('reports.php', $currentPage) ?>>
-                        <span class="nav-icon">📋</span> Financial Reports
-                    </a>
-                </li>
-            <?php endif; ?>
+                <!-- Auditing Subsections -->
+                <?php if ($userRole === 'super_admin' || $userRole === 'manager' || $userRole === 'admin'): ?>
+                    <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Auditing & Insights</li>
+                    <li class="nav-item"><a href="reports.php" <?= isNavActive('reports.php', $currentPage) ?>><span class="nav-icon">📋</span> Financial Reports</a></li>
+                <?php endif; ?>
             <?php endif; ?>
         </ul>
     </div>
@@ -117,7 +91,7 @@ function isNavActive($pageName, $currentPage) {
     <!-- Quick Actions Panel Footer Profile Block Element -->
     <div class="sidebar-footer" style="padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; margin-top: 30px;">
         <div style="display: flex; flex-direction: column;">
-            <span style="font-size: 13px; font-weight: 600; color: #ffffff;"><?= htmlspecialchars(user()['name'] ?? 'Finance User') ?></span>
+            <span style="font-size: 13px; font-weight: 600; color: #ffffff;"><?= htmlspecialchars(user()['name'] ?? 'ERP User') ?></span>
             <span style="font-size: 11px; color: #cbd5e0; text-transform: capitalize;"><?= str_replace('_', ' ', $userRole) ?></span>
         </div>
         <a href="../logout.php" title="Sign Out Session" style="color: #fc8181; text-decoration: none; font-size: 16px; transition: transform 0.2s; display: inline-block;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
