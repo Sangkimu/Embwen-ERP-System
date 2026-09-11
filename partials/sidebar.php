@@ -1,103 +1,117 @@
 <?php
-require_once "../config.php";
-requireLogin();
-if(!allowed(['students'])){http_response_code(403);die("Access denied.");}
-$st=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s JOIN student_accounts sa ON sa.student_id=s.student_id JOIN courses c ON c.course_id=s.course_id WHERE sa.username=? LIMIT 1");
-$st->execute([user()['username']]);$student=$st->fetch();
-$payments=0;
-if($student){$q=$pdo->prepare("SELECT COALESCE(SUM(amount_paid),0) FROM fee_payments WHERE student_id=?");$q->execute([$student['student_id']]);$payments=$q->fetchColumn();}
-$notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('all','students')")->fetchColumn();
-$services=moduleServices('students',user()['role']);
+// Determine the current active file name to toggle focus states dynamically
+$currentPage = basename($_SERVER['PHP_SELF']);
 
-// --- NEW POLYTECHNIC CORE LOGIC ---
-$course_units = [];
-$outstanding_balance = 0;
-$active_sem_name = "No Active Semester";
+// Extract the user role securely from active session context elements
+$userRole = user()['role'] ?? 'staff'; 
 
-if($student) {
-    // 1. Fetch current active semester details
-    $sem_stmt = $pdo->query("SELECT semester_id, semester_name FROM semesters WHERE is_active = 1 LIMIT 1");
-    $active_semester = $sem_stmt->fetch();
-    $current_sem_id = $active_semester['semester_id'] ?? 0;
-    $active_sem_name = $active_semester['semester_name'] ?? 'Active Semester';
-
-    // 2. Fetch specific continuous assessment & workshop modular marks for this term
-    $marks_stmt = $pdo->prepare("SELECT unit_code_name, cat_mark, practical_mark, exam_mark FROM course_marks WHERE student_id = ? AND semester_id = ?");
-    $marks_stmt->execute([$student['student_id'], $current_sem_id]);
-    $course_units = $marks_stmt->fetchAll();
-
-    // 3. Fetch this specific semester's fee invoice requirements
-    $fee_stmt = $pdo->prepare("SELECT current_fee_charged FROM enrollments WHERE student_id = ? AND semester_id = ? LIMIT 1");
-    $fee_stmt->execute([$student['student_id'], $current_sem_id]);
-    $current_invoice = $fee_stmt->fetchColumn() ?: 0;
-    
-    // Calculate remaining balance dynamically
-    $outstanding_balance = $current_invoice - $payments;
+/**
+ * Helper function to output active styles if the page matches
+ */
+function isNavActive($pageName, $currentPage) {
+    if ($currentPage === $pageName) {
+        return 'style="display: flex; align-items: center; gap: 12px; color: #ffffff; text-decoration: none; padding: 12px; border-radius: 6px; background: rgba(255,255,255,0.15); font-size: 14px; font-weight: 600; border-left: 3px solid #fff5f5;"';
+    }
+    return 'style="display: flex; align-items: center; gap: 12px; color: #e2e8f0; text-decoration: none; padding: 12px; border-radius: 6px; font-size: 14px; transition: background 0.2s; border-left: 3px solid transparent;"';
 }
-// --- END POLYTECHNIC CORE LOGIC ---
 ?>
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Student Portal</title><link rel="stylesheet" href="../assets/css/style.css">
-<style>
-    /* Styling constraints configured cleanly to ride on top of your master css sheet rules */
-    .poly-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    .poly-table th, .poly-table td { text-align: left; padding: 10px; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.85rem; }
-    .poly-table th { background: rgba(0,0,0,0.02); color: #475569; font-weight: 600; }
-    .balance-highlight { background: #fef2f2; border-left: 4px solid #ef4444; padding: 12px; border-radius: 4px; margin-top: 10px; }
-    .balance-highlight div { font-size: 1.4rem; font-weight: bold; color: #b91c1c; margin-top: 2px; }
-    .btn-pay { display: block; text-align: center; background: #22c55e; color: #fff; padding: 10px; border-radius: 4px; font-weight: bold; text-decoration: none; margin-top: 15px; font-size: 0.9rem; }
-</style>
-</head><body><div class="app"><aside class="sidebar"><?php include "../partials/sidebar.php";?></aside><main class="main"><header class="topbar"><div class="module-tag">Workspace / <b>Student Portal</b></div><div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div></header><section class="content"><div class="page-head"><div><p class="eyebrow">STUDENT PORTAL — <?=htmlspecialchars($active_sem_name)?></p><h1>Welcome, <?=htmlspecialchars(user()['name'])?></h1><p>Access your student services.</p></div></div><div class="stats"><div class="stat"><span>Student ID</span><strong><?=htmlspecialchars($student['id_no']??'N/A')?></strong></div><div class="stat"><span>Course</span><strong><?=htmlspecialchars($student['course_code']??'N/A')?></strong></div><div class="stat"><span>Payment Total</span><strong><?=money($payments)?></strong></div><div class="stat"><span>Notices</span><strong><?=htmlspecialchars($notices)?></strong></div></div>
 
-<div class="grid">
-    <!-- Left Column: Lean Polytechnic Academics and Hands-on Workshop Tracking -->
-    <section class="card">
-        <h2>Semester Coursework & Practicals</h2>
-        <?php if(!empty($course_units)): ?>
-            <table class="poly-table">
-                <thead>
-                    <tr>
-                        <th>Unit / Skill Module</th>
-                        <th>Theory CAT (30)</th>
-                        <th>Workshop Prac (30)</th>
-                        <th>Exam</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($course_units as $unit): ?>
-                        <tr>
-                            <td><b><?=htmlspecialchars($unit['unit_code_name'])?></b></td>
-                            <td><?=$unit['cat_mark'] !== null ? $unit['cat_mark'] : '-'?></td>
-                            <td><?=$unit['practical_mark'] !== null ? $unit['practical_mark'] : '-'?></td>
-                            <td><?=$unit['exam_mark'] !== null ? $unit['exam_mark'] : 'Pending'?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <div class="service"><div style="color:#666; font-size:0.85rem;">No workshop modules or assessment grades posted for this semester yet.</div></div>
-        <?php endif; ?>
-        
-        <h2 style="margin-top: 30px;">Your Modules</h2>
-        <?php foreach($services as $s):?>
-            <a class="service" href="<?=htmlspecialchars($s['path'])?>"><div class="service-icon">◆</div><div><b><?=htmlspecialchars($s['label'])?></b><small><?=htmlspecialchars($s['description'])?></small></div></a>
-        <?php endforeach;?>
-    </section>
-
-    <!-- Right Column: Account Meta details and Semester Statements -->
-    <section class="card">
-        <h2>Semester Fee Reconciliation</h2>
-        <div class="balance-highlight">
-            <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: bold; color: #991b1b;">Outstanding Balance</span>
-            <div><?=money($outstanding_balance)?></div>
+<div class="sidebar-wrapper" style="background: #1e3d73; color: #ffffff; min-height: 100vh; padding: 20px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+    
+    <div>
+        <!-- Branding Block Header -->
+        <div class="sidebar-brand" style="margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
+            <h4 style="margin: 0; font-size: 18px; color: #ffffff; letter-spacing: 0.5px;">College ERP</h4>
+            <small style="color: #cbd5e0; font-size: 11px; text-transform: uppercase;">
+                <?= ($userRole === 'super_admin' || $userRole === 'manager') ? 'Manager Console' : (($userRole === 'admin') ? 'Officer Workspace' : 'Clerk Panel') ?>
+            </small>
         </div>
-        <?php if($outstanding_balance > 0): ?>
-            <a href="payments/mpesa_trigger.php" class="btn-pay">Pay Fees via M-Pesa</a>
-        <?php endif; ?>
 
-        <h2 style="margin-top: 30px;">Account Information</h2>
-        <div class="service"><div><b><?=htmlspecialchars($student['name']??user()['name'])?></b><small><?=htmlspecialchars($student['course_name']??'Course information unavailable')?></small></div></div>
-        <div class="service"><div><b>Status</b><small><?=htmlspecialchars(ucfirst($student['status']??'Unknown'))?></small></div></div>
-    </section>
+        <!-- Main Navigation List Link Groups -->
+        <ul class="nav-menu" style="list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px;">
+            
+            <!-- 1. Central Dashboard Entry (Accessible to All Roles) -->
+            <li class="nav-item">
+                <a href="index.php" <?= isNavActive('index.php', $currentPage) ?>>
+                    <span class="nav-icon">📊</span> Dashboard Home
+                </a>
+            </li>
+
+            <!-- DYNAMIC REVENUE SECTION (Visible to All, but content is filtered inside) -->
+            <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">
+                Revenue & Collections
+            </li>
+
+            <!-- 2. Fee Payments Ledger (All Roles: Clerks post entries, Officers/Managers supervise) -->
+            <li class="nav-item">
+                <a href="payments.php" <?= isNavActive('payments.php', $currentPage) ?>>
+                    <span class="nav-icon">💰</span> Payments Ledger
+                </a>
+            </li>
+
+            <!-- 3. Dynamic Fee Structure Setup (Restricted: Managers & Officers configure billing blueprints) -->
+            <?php if ($userRole === 'super_admin' || $userRole === 'manager' || $userRole === 'admin'): ?>
+                <li class="nav-item">
+                    <a href="fee_structure.php" <?= isNavActive('fee_structure.php', $currentPage) ?>>
+                        <span class="nav-icon">📝</span> Billing Blueprints
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <!-- 4. Bulk Invoicing Engine link (Strictly restricted to Finance Managers / Super Admins) -->
+            <?php if ($userRole === 'super_admin' || $userRole === 'manager'): ?>
+                <li class="nav-item">
+                    <a href="bulk_invoice.php" <?= isNavActive('bulk_invoice.php', $currentPage) ?>>
+                        <span class="nav-icon">⚙️</span> Bulk Invoicing Engine
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <!-- DYNAMIC OUTFLOWS SECTION (Hidden entirely from front-desk Clerical Staff) -->
+            <?php if ($userRole === 'super_admin' || $userRole === 'manager' || $userRole === 'admin'): ?>
+                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">
+                    Outflows & Operations
+                </li>
+
+                <!-- 5. Expense Control (Officers log daily vouchers, Managers approve/audit) -->
+                <li class="nav-item">
+                    <a href="expenses.php" <?= isNavActive('expenses.php', $currentPage) ?>>
+                        <span class="nav-icon">📉</span> Expense Vouchers
+                    </a>
+                </li>
+
+                <!-- 6. Procurement Portals (Officers manage supplier details, Managers clear procurement lines) -->
+                <li class="nav-item">
+                    <a href="suppliers.php" <?= isNavActive('suppliers.php', $currentPage) ?>>
+                        <span class="nav-icon">🏭</span> Procurement Portal
+                    </a>
+                </li>
+            <?php endif; ?>
+
+            <!-- AUDITING AND INSIGHTS SECTION (Restricted: Visible to Finance Officers and Managers only) -->
+            <?php if ($userRole === 'super_admin' || $userRole === 'manager' || $userRole === 'admin'): ?>
+                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">
+                    Auditing & Insights
+                </li>
+
+                <!-- 7. Comprehensive Audit Reports & Balance Sheet Projections -->
+                <li class="nav-item">
+                    <a href="reports.php" <?= isNavActive('reports.php', $currentPage) ?>>
+                        <span class="nav-icon">📋</span> Financial Reports
+                    </a>
+                </li>
+            <?php endif; ?>
+        </ul>
+    </div>
+
+    <!-- Quick Actions Panel Footer Profile Block Element -->
+    <div class="sidebar-footer" style="padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between; margin-top: 30px;">
+        <div style="display: flex; flex-direction: column;">
+            <span style="font-size: 13px; font-weight: 600; color: #ffffff;"><?= htmlspecialchars(user()['name'] ?? 'Finance User') ?></span>
+            <span style="font-size: 11px; color: #cbd5e0; text-transform: capitalize;"><?= str_replace('_', ' ', $userRole) ?></span>
+        </div>
+        <a href="../logout.php" title="Sign Out Session" style="color: #fc8181; text-decoration: none; font-size: 16px; transition: transform 0.2s; display: inline-block;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+            🚪
+        </a>
+    </div>
 </div>
-
-</section></main></div></body></html>
