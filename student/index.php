@@ -8,7 +8,7 @@ $st->execute([user()['username']]);$student=$st->fetch();
 // --- MANDATORY PROFILE COMPLETION GATEWAY CHECK ---
 if ($student) {
     if (empty($student['id_no']) || empty($student['phone']) || empty($student['email']) || empty($student['gender'])) {
-        header("Location: complete_profile.php");
+        header("Location: complete_profile.php?required=1");
         exit;
     }
 }

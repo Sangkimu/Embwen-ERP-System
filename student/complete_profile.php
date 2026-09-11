@@ -12,6 +12,7 @@ $student=$st->fetch();
 if(!$student) { die("System Profile mismatch error."); }
 
 $error = "";
+$profileRequired = isset($_GET['required']) && $_GET['required'] === '1';
 
 // 2. Handle Profile Data Form Submission Postback
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -54,6 +55,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .form-control:focus { outline: none; border-color: #1e3d73; box-shadow: 0 0 0 3px rgba(30,61,115,0.15); }
         .alert-warning-banner { background: #fffbeb; border-left: 4px solid #d97706; color: #92400e; padding: 15px; border-radius: 4px; margin-bottom: 20px; font-size: 0.88rem; line-height: 1.4; }
         .alert-danger-banner { background: #fef2f2; border-left: 4px solid #ef4444; color: #991b1b; padding: 12px; border-radius: 4px; margin-bottom: 20px; font-size: 0.88rem; }
+        .profile-required-modal { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(16,43,97,.48); }
+        .profile-required-box { width: min(440px, 100%); padding: 26px; border-radius: 12px; background: #fff; box-shadow: 0 20px 60px rgba(16,43,97,.28); }
+        .profile-required-box strong { display: block; color: #92400e; font-size: 18px; margin-bottom: 8px; }
+        .profile-required-box p { color: #475569; font-size: 14px; line-height: 1.5; margin: 0 0 18px; }
+        .profile-required-box button { border: 0; border-radius: 5px; padding: 11px 16px; background: #1e3d73; color: #fff; font-weight: 700; cursor: pointer; }
         .btn-save-profile { background: #1e3d73; color: #fff; border: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; font-size: 0.9rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }
         .btn-save-profile:hover { background: #142a52; }
     </style>
@@ -70,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div>
                 <?=htmlspecialchars(user()['name'])?>
             </div>
+            <img class="header-logo" src="../Images/logo.gif" alt="Polytechnic ERP logo">
         </header>
         
         <section class="content">
@@ -142,5 +149,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </section>
     </main>
 </div>
+<?php if ($profileRequired): ?>
+<div class="profile-required-modal" role="alertdialog" aria-modal="true" aria-labelledby="profileRequiredTitle">
+    <div class="profile-required-box">
+        <strong id="profileRequiredTitle">Profile completion required</strong>
+        <p>Complete your student profile before accessing the dashboard, fees, coursework, or notices.</p>
+        <button type="button" onclick="document.querySelector('.profile-required-modal').remove(); document.getElementById('id_no').focus();">Continue to profile</button>
+    </div>
+</div>
+<script>document.getElementById('id_no').focus();</script>
+<?php endif; ?>
 </body>
 </html>
