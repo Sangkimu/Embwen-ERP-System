@@ -24,7 +24,7 @@ function isNavActive($pageName, $currentPage) {
         <div class="sidebar-brand" style="margin-bottom: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 15px;">
             <h4 style="margin: 0; font-size: 18px; color: #ffffff; letter-spacing: 0.5px;">Polytechnic ERP</h4>
             <small style="color: #cbd5e0; font-size: 11px; text-transform: uppercase;">
-                <?= $userModule === 'students' ? 'Student Portal' : (($userRole === 'dean') ? 'Dean of Students' : (($userRole === 'lecturers') ? 'Faculty Space' : (($userRole === 'super_admin' || $userRole === 'manager') ? 'Manager Console' : (($userRole === 'admin') ? 'Officer Workspace' : 'Clerk Panel')))) ?>
+                <?= $userModule === 'students' ? 'Student Portal' : (($userRole === 'dean') ? "Dean's Office" : (($userRole === 'lecturers') ? 'Faculty Space' : (($userRole === 'super_admin' || $userRole === 'manager') ? 'Manager Console' : (($userRole === 'admin') ? 'Officer Workspace' : 'Clerk Panel')))) ?>
             </small>
         </div>
 
@@ -45,10 +45,10 @@ function isNavActive($pageName, $currentPage) {
             <?php elseif ($userRole === 'dean'): ?>
                 <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard Home</a></li>
                 <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Admissions & Registry</li>
-                <li class="nav-item"><a href="admissions.php" <?= isNavActive('admissions.php', $currentPage) ?>><span class="nav-icon">📝</span> Admissions Approval</a></li>
+                <li class="nav-item"><a href="admissions.php" <?= isNavActive('admissions.php', $currentPage) ?>><span class="nav-icon">📝</span> Admissions & ID Generator</a></li>
                 <li class="nav-item"><a href="../students.php" <?= isNavActive('students.php', $currentPage) ?>><span class="nav-icon">👥</span> Student Registry</a></li>
                 <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Boarding & Welfare</li>
-                <li class="nav-item"><a href="accommodation.php" <?= isNavActive('accommodation.php', $currentPage) ?>><span class="nav-icon">🏢</span> Hostels & Accom.</a></li>
+                <li class="nav-item"><a href="accommodation.php" <?= isNavActive('accommodation.php', $currentPage) ?>><span class="nav-icon">🏢</span> Boarding Management</a></li>
                 <li class="nav-item"><a href="welfare.php" <?= isNavActive('welfare.php', $currentPage) ?>><span class="nav-icon">🛡️</span> Student Welfare</a></li>
 
             <!-- ================= ROLE MODULE 3: LECTURERS / FACULTY ================= -->

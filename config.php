@@ -161,7 +161,7 @@ function moduleServices($module, $role=null){
   'dean'=>[
     'courses'=>['label'=>'Courses','path'=>'../admin/courses.php','description'=>'Review course and department assignments.'],
     'departments'=>['label'=>'Departments','path'=>'../admin/departments.php','description'=>'Review academic departments.'],
-   'admissions'=>['label'=>'Admissions','path'=>'admissions.php','description'=>'Review applications and decisions.'],
+  'admissions'=>['label'=>'Admissions & ID Generator','path'=>'admissions.php','description'=>'Review applications and generate admission numbers.'],
   'accommodation'=>['label'=>'Boarding Management','path'=>'accommodation.php','description'=>'Allocate and release hostel rooms.'],
     'welfare'=>['label'=>'Student Welfare','path'=>'welfare.php','description'=>'Manage student welfare cases.'],
     'students'=>['label'=>'Students','path'=>'../students.php','description'=>'Manage enrolled student records.']
