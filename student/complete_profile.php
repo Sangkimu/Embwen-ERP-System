@@ -21,11 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email   = trim($_POST['email'] ?? '');
     $gender  = trim($_POST['gender'] ?? '');
     $courseId = filter_input(INPUT_POST, 'course_id', FILTER_VALIDATE_INT);
+    $residency = $_POST['residency'] ?? '';
 
-    if (!empty($id_no) && !empty($phone) && !empty($email) && !empty($gender) && $courseId) {
+    if (!empty($id_no) && !empty($phone) && !empty($email) && !empty($gender) && $courseId && in_array($residency, ['boarder','dayscholar'], true)) {
         try {
-            $update = $pdo->prepare("UPDATE students SET id_no = ?, phone = ?, email = ?, gender = ?, course_id = ?, status = 'active' WHERE student_id = ?");
-            $update->execute([$id_no, $phone, $email, $gender, $courseId, $student['student_id']]);
+            $update = $pdo->prepare("UPDATE students SET id_no = ?, phone = ?, email = ?, gender = ?, course_id = ?, residency = ?, status = 'active' WHERE student_id = ?");
+            $update->execute([$id_no, $phone, $email, $gender, $courseId, $residency, $student['student_id']]);
             
             // Success! Unlock workspace by routing straight back to the index dashboard
             header("Location: index.php");
@@ -34,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "System registry error during submission: " . $e->getMessage();
         }
     } else {
-        $error = "Please complete all required details and select your course.";
+        $error = "Please complete all required details, select your course, and choose Boarder or Dayscholar.";
     }
 }
 ?>
@@ -123,6 +124,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <?php endforeach; ?>
                             </select>
                             <small style="display:block;margin-top:5px;color:#64748b;">The Dean's Office can review or correct this course assignment after registration.</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="residency">Fee classification</label>
+                            <select id="residency" name="residency" class="form-control" required>
+                                <option value="">-- Select fee classification --</option>
+                                <option value="boarder" <?=($student['residency']??'')==='boarder'?'selected':''?>>Boarder</option>
+                                <option value="dayscholar" <?=($student['residency']??'')==='dayscholar'?'selected':''?>>Dayscholar / Commuter</option>
+                            </select>
+                            <small style="display:block;margin-top:5px;color:#64748b;">This determines which boarding or dayscholar fee schedule applies to your account.</small>
                         </div>
 
                         <div class="form-row">

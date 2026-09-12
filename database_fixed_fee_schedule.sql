@@ -5,30 +5,19 @@ USE vocational_erp;
 CREATE TEMPORARY TABLE fixed_fee_seed (
   fee_type VARCHAR(40) NOT NULL,
   semester TINYINT UNSIGNED NOT NULL,
-  amount DECIMAL(10,2) NOT NULL
+  amount DECIMAL(10,2) NOT NULL,
+  residency_scope ENUM('universal','boarder','dayscholar') NOT NULL
 );
 
 INSERT INTO fixed_fee_seed VALUES
-('boarding_lunch_boarder',1,6500),('boarding_lunch_boarder',2,6500),('boarding_lunch_boarder',3,5300),
-('admin_cost',1,500),('admin_cost',2,300),('admin_cost',3,200),
-('p_emolument',1,3000),('p_emolument',2,2500),('p_emolument',3,2000),
-('medical_boarder',1,500),('medical_boarder',2,300),('medical_boarder',3,200),
-('lt_t_boarder',1,500),('lt_t_boarder',2,500),('lt_t_boarder',3,300),
-('tuition',1,500),('tuition',2,300),('tuition',3,200),
-('e_w_c_boarder',1,500),('e_w_c_boarder',2,200),('e_w_c_boarder',3,200),
-('boarding_lunch_dayscholar',1,4500),('boarding_lunch_dayscholar',2,4500),('boarding_lunch_dayscholar',3,3500),
-('admin_cost',1,500),('admin_cost',2,300),('admin_cost',3,200),
-('p_emolument',1,3000),('p_emolument',2,2500),('p_emolument',3,1800),
-('medical_dayscholar',1,300),('medical_dayscholar',2,300),('medical_dayscholar',3,200),
-('lt_t_dayscholar',1,400),('lt_t_dayscholar',2,400),('lt_t_dayscholar',3,400),
-('tuition',1,500),('tuition',2,300),('tuition',3,200),
-('e_w_c_dayscholar',1,300),('e_w_c_dayscholar',2,200),('e_w_c_dayscholar',3,200),
-('computer_packages',1,3500),('admission_fee',1,500),('attachment_fee',2,1500);
+('boarding_lunch',1,6500,'boarder'),('boarding_lunch',2,6500,'boarder'),('boarding_lunch',3,5300,'boarder'),('admin_cost',1,500,'boarder'),('admin_cost',2,300,'boarder'),('admin_cost',3,200,'boarder'),('p_emolument',1,3000,'boarder'),('p_emolument',2,2500,'boarder'),('p_emolument',3,2000,'boarder'),('medical',1,500,'boarder'),('medical',2,300,'boarder'),('medical',3,200,'boarder'),('lt_t',1,500,'boarder'),('lt_t',2,500,'boarder'),('lt_t',3,300,'boarder'),('tuition',1,500,'boarder'),('tuition',2,300,'boarder'),('tuition',3,200,'boarder'),('e_w_c',1,500,'boarder'),('e_w_c',2,200,'boarder'),('e_w_c',3,200,'boarder'),
+('boarding_lunch',1,4500,'dayscholar'),('boarding_lunch',2,4500,'dayscholar'),('boarding_lunch',3,3500,'dayscholar'),('admin_cost',1,500,'dayscholar'),('admin_cost',2,300,'dayscholar'),('admin_cost',3,200,'dayscholar'),('p_emolument',1,3000,'dayscholar'),('p_emolument',2,2500,'dayscholar'),('p_emolument',3,1800,'dayscholar'),('medical',1,300,'dayscholar'),('medical',2,300,'dayscholar'),('medical',3,200,'dayscholar'),('lt_t',1,400,'dayscholar'),('lt_t',2,400,'dayscholar'),('lt_t',3,400,'dayscholar'),('tuition',1,500,'dayscholar'),('tuition',2,300,'dayscholar'),('tuition',3,200,'dayscholar'),('e_w_c',1,300,'dayscholar'),('e_w_c',2,200,'dayscholar'),('e_w_c',3,200,'dayscholar'),
+('computer_packages',1,3500,'universal'),('admission_fee',1,500,'universal'),('attachment_fee',2,1500,'universal');
 
-INSERT INTO fee_structure (course_id,fee_type,amount,academic_year,semester)
-SELECT c.course_id,s.fee_type,s.amount,'2026',s.semester
+INSERT INTO fee_structure (course_id,fee_type,amount,academic_year,semester,residency_scope)
+SELECT c.course_id,s.fee_type,s.amount,'2026',s.semester,s.residency_scope
 FROM courses c CROSS JOIN fixed_fee_seed s
 WHERE c.status='active'
-AND NOT EXISTS (SELECT 1 FROM fee_structure f WHERE f.course_id=c.course_id AND f.fee_type=s.fee_type AND f.academic_year='2026' AND f.semester=s.semester);
+AND NOT EXISTS (SELECT 1 FROM fee_structure f WHERE f.course_id=c.course_id AND f.fee_type=s.fee_type AND f.academic_year='2026' AND f.semester=s.semester AND f.residency_scope=s.residency_scope);
 
 DROP TEMPORARY TABLE fixed_fee_seed;

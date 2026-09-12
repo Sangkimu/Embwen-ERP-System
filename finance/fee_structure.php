@@ -78,7 +78,11 @@ function formatVoteHeadLabel($rawType) {
         'e_w_c_dayscholar'          => 'E W & C (Dayscholar)',
         'computer_packages'         => 'Computer Packages',
         'admission_fee'             => 'Admission Fee',
-        'attachment_fee'            => 'Attachment Fee'
+        'attachment_fee'            => 'Attachment Fee',
+        'exam_knec'                 => 'Examination Fee (KNEC)',
+        'exam_nita'                 => 'Examination Fee (NITA)',
+        'exam_kasneb'               => 'Examination Fee (KASNEB)',
+        'lab_practical'             => 'Examination / Practical Fee'
     ];
     return $labels[$rawType] ?? ucfirst(str_replace('_', ' ', $rawType));
 }

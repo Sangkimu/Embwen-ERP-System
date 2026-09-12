@@ -16,7 +16,7 @@ function tableExists($pdo,$table){
  return (bool)$stmt->fetchColumn();
 }
 function studentProfileComplete($student){
- return is_array($student) && !empty($student['id_no']) && !empty($student['phone']) && !empty($student['email']) && !empty($student['gender']) && !empty($student['course_id']);
+ return is_array($student) && !empty($student['id_no']) && !empty($student['phone']) && !empty($student['email']) && !empty($student['gender']) && !empty($student['course_id']) && in_array($student['residency']??'', ['boarder','dayscholar'], true);
 }
 function requireCompleteStudentProfile($student){
  if(!studentProfileComplete($student)){ header('Location: complete_profile.php?required=1'); exit; }
@@ -75,10 +75,28 @@ function fixedFeeSchedule2026(){
  ];
 }
 function studentFeeSummary($pdo,$studentId){
- $stmt=$pdo->prepare("SELECT COALESCE(SUM(fs.amount),0) AS billed,COALESCE((SELECT SUM(fp.amount_paid) FROM fee_payments fp WHERE fp.student_id=? AND fp.fee_structure_id=fs.fee_structure_id AND fp.amount_paid>0),0) AS paid FROM fee_structure fs JOIN students s ON s.course_id=fs.course_id WHERE s.student_id=?");
+ $stmt=$pdo->prepare("SELECT COALESCE(SUM(fs.amount),0) AS billed,COALESCE((SELECT SUM(fp.amount_paid) FROM fee_payments fp WHERE fp.student_id=? AND fp.fee_structure_id=fs.fee_structure_id AND fp.amount_paid>0),0) AS paid FROM fee_structure fs JOIN students s ON s.course_id=fs.course_id WHERE s.student_id=? AND (fs.residency_scope='universal' OR fs.residency_scope=s.residency)");
  $stmt->execute([$studentId,$studentId]);
  $summary=$stmt->fetch()?:['billed'=>0,'paid'=>0];
  $summary['billed']=(float)$summary['billed'];$summary['paid']=(float)$summary['paid'];$summary['balance']=max(0,$summary['billed']-$summary['paid']);
+ return $summary;
+}
+function currentAcademicTerm(){
+ $month=(int)date('n');
+ return $month<=4?1:($month<=8?2:3);
+}
+function residencyFeeSql($feeColumn='fs.fee_type',$studentColumn='s.residency'){
+ return "(fs.residency_scope='universal' OR fs.residency_scope=$studentColumn)";
+}
+function studentFeeCategorySummary($pdo,$studentId,$year=null,$term=null){
+ $where=['s.student_id=?'];$params=[$studentId];
+ if($year!==null){$where[]='fs.academic_year=?';$params[]=$year;}
+ if($term!==null){$where[]='fs.semester=?';$params[]=$term;}
+ $sql="SELECT CASE WHEN fs.residency_scope<>'universal' THEN 'boarding' WHEN fs.fee_type LIKE 'exam%' OR fs.fee_type='lab_practical' THEN 'examination' ELSE 'institution' END AS category,COALESCE(SUM(fs.amount),0) AS billed,COALESCE(SUM((SELECT COALESCE(SUM(fp.amount_paid),0) FROM fee_payments fp WHERE fp.student_id=? AND fp.fee_structure_id=fs.fee_structure_id AND fp.amount_paid>0)),0) AS paid FROM fee_structure fs JOIN students s ON s.course_id=fs.course_id WHERE ".implode(' AND ',$where)." AND (fs.residency_scope='universal' OR fs.residency_scope=s.residency) GROUP BY category";
+ array_splice($params,1,0,$studentId);
+ $stmt=$pdo->prepare($sql);$stmt->execute($params);
+ $summary=['institution'=>['billed'=>0,'paid'=>0,'balance'=>0],'boarding'=>['billed'=>0,'paid'=>0,'balance'=>0],'examination'=>['billed'=>0,'paid'=>0,'balance'=>0]];
+ foreach($stmt as $row){$summary[$row['category']]=['billed'=>(float)$row['billed'],'paid'=>(float)$row['paid'],'balance'=>max(0,(float)$row['billed']-(float)$row['paid'])];}
  return $summary;
 }
 function mpesaConfig(){

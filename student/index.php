@@ -30,15 +30,6 @@ if($student && tableExists($pdo,'semesters')) {
         $course_units = $marks_stmt->fetchAll();
     }
 
-    // 3. Fetch this specific semester's fee invoice requirements
-    if(tableExists($pdo,'enrollments')) {
-        $fee_stmt = $pdo->prepare("SELECT current_fee_charged FROM enrollments WHERE student_id = ? AND semester_id = ? LIMIT 1");
-        $fee_stmt->execute([$student['student_id'], $current_sem_id]);
-        $current_invoice = $fee_stmt->fetchColumn() ?: 0;
-    }
-    
-    // Calculate remaining balance dynamically
-    $outstanding_balance = $current_invoice - $payments;
 }
 // --- END POLYTECHNIC CORE LOGIC ---
 ?>

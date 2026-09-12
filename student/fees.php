@@ -12,8 +12,11 @@ $statement = [];
 $outstanding_balance = 0;
 $current_invoice = 0;
 $payments_total = 0;
-$feeItems=[];
 $active_sem_name = "No Active Semester";
+$termYear='2026';
+$termNumber=currentAcademicTerm();
+$currentTermSummary=['institution'=>['billed'=>0,'paid'=>0,'balance'=>0],'boarding'=>['billed'=>0,'paid'=>0,'balance'=>0],'examination'=>['billed'=>0,'paid'=>0,'balance'=>0]];
+$arrearsSummary=$currentTermSummary;
 
 if($student) {
     // 2. Fetch active semester details
@@ -22,11 +25,9 @@ if($student) {
     $active_sem_name = $active_semester['semester_name'] ?? 'Active Semester';
 
     $feeSummary=studentFeeSummary($pdo,$student['student_id']);
+    $currentTermSummary=studentFeeCategorySummary($pdo,$student['student_id'],$termYear,$termNumber);
+    $arrearsSummary=studentFeeCategorySummary($pdo,$student['student_id']);
     $current_invoice=$feeSummary['billed'];
-    $itemStmt=$pdo->prepare("SELECT fs.fee_type,fs.amount,fs.academic_year,fs.semester,COALESCE((SELECT SUM(fp.amount_paid) FROM fee_payments fp WHERE fp.student_id=? AND fp.fee_structure_id=fs.fee_structure_id AND fp.amount_paid>0),0) AS paid FROM fee_structure fs WHERE fs.course_id=? ORDER BY fs.academic_year,fs.semester,fs.fee_type");
-    $itemStmt->execute([$student['student_id'],$student['course_id']]);
-    $feeItems=$itemStmt->fetchAll();
-
     // 4. Fetch lifetime comprehensive statement details from fee_payments
     $statement_stmt = $pdo->prepare("SELECT payment_id, receipt_no, amount_paid, payment_method, payment_date FROM fee_payments WHERE student_id = ? ORDER BY payment_date DESC");
     $statement_stmt->execute([$student['student_id']]);
@@ -55,15 +56,25 @@ $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('al
 </head><body><div class="app"><aside class="sidebar"><?php include "../partials/sidebar.php";?></aside><main class="main"><header class="topbar"><div class="module-tag">Workspace / <b>My Fees</b></div><div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div></header><section class="content"><div class="page-head"><div><p class="eyebrow">FINANCIAL LEDGER</p><h1>Fee Statement & Receipts</h1><p>Review invoices and historical payments recorded for your student profile.</p></div></div>
 
 <div class="stats">
-    <div class="stat"><span>Semester Invoice</span><strong><?=money($current_invoice)?></strong></div>
-    <div class="stat"><span>Total Paid to Date</span><strong style="color:#15803d;"><?=money($payments_total)?></strong></div>
-    <div class="stat"><span>Outstanding Balance</span><strong style="color:#b91c1c;"><?=money($outstanding_balance)?></strong></div>
+    <div class="stat"><span>Institution Fees · Term <?=$termNumber?></span><strong><?=money($currentTermSummary['institution']['balance'])?></strong></div>
+    <div class="stat"><span>Boarding Fees · Term <?=$termNumber?></span><strong><?=money($currentTermSummary['boarding']['balance'])?></strong></div>
+    <div class="stat"><span>Examination Fees · Term <?=$termNumber?></span><strong><?=money($currentTermSummary['examination']['balance'])?></strong></div>
+    <div class="stat"><span>Total Course Arrears</span><strong style="color:#b91c1c;"><?=money($outstanding_balance)?></strong></div>
 </div>
 
 <div class="grid" style="grid-template-columns: 1fr;">
     <section class="card printable-area">
-        <h2>Course-Period Fee Tracker</h2>
-        <?php if($feeItems): ?><table class="fee-table"><thead><tr><th>Academic year</th><th>Term</th><th>Fee item</th><th>Billed</th><th>Paid</th><th>Balance</th></tr></thead><tbody><?php foreach($feeItems as $item): $itemBalance=max(0,(float)$item['amount']-(float)$item['paid']); ?><tr><td><?=htmlspecialchars($item['academic_year'])?></td><td>Term <?=htmlspecialchars($item['semester'])?></td><td><?=htmlspecialchars(ucwords(str_replace('_',' ',$item['fee_type'])))?></td><td><?=money($item['amount'])?></td><td style="color:#15803d"><?=money($item['paid'])?></td><td style="color:<?=$itemBalance>0?'#b91c1c':'#15803d'?>;font-weight:700"><?=money($itemBalance)?></td></tr><?php endforeach; ?></tbody></table><?php else: ?><div class="service">No fee schedule has been assigned to this course yet.</div><?php endif; ?>
+        <h2>Current Term Summary</h2>
+        <p style="color:#64748b;font-size:.88rem;">Term <?=$termNumber?>, <?=$termYear?>. Balances include billed fees less confirmed payments.</p>
+        <table class="fee-table"><thead><tr><th>Category</th><th>Billed</th><th>Paid</th><th>Balance</th></tr></thead><tbody>
+        <?php foreach(['institution'=>'Institution fees','boarding'=>'Boarding fees','examination'=>'Examination fees'] as $category=>$label): ?><tr><td><?=htmlspecialchars($label)?></td><td><?=money($currentTermSummary[$category]['billed'])?></td><td style="color:#15803d"><?=money($currentTermSummary[$category]['paid'])?></td><td style="font-weight:700;color:#b91c1c"><?=money($currentTermSummary[$category]['balance'])?></td></tr><?php endforeach; ?>
+        </tbody></table>
+    </section>
+    <section class="card printable-area">
+        <h2>Course Arrears Summary</h2>
+        <table class="fee-table"><thead><tr><th>Category</th><th>Outstanding balance</th></tr></thead><tbody>
+        <?php foreach(['institution'=>'Institution fees','boarding'=>'Boarding fees','examination'=>'Examination fees'] as $category=>$label): ?><tr><td><?=htmlspecialchars($label)?></td><td style="font-weight:700;color:#b91c1c"><?=money($arrearsSummary[$category]['balance'])?></td></tr><?php endforeach; ?>
+        </tbody></table>
     </section>
     <section class="card printable-area">
         <div style="display:flex; justify-content:space-between; align-items:center;">
