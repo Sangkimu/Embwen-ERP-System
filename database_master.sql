@@ -134,7 +134,7 @@ CREATE TABLE IF NOT EXISTS welfare_updates (
 CREATE TABLE IF NOT EXISTS fee_structure (
   fee_structure_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   course_id INT UNSIGNED NOT NULL,
-  fee_type ENUM('tuition','exam','other') NOT NULL,
+  fee_type ENUM('boarding_lunch_boarder','boarding_lunch_dayscholar','admin_cost','p_emolument','medical_boarder','medical_dayscholar','lt_t_boarder','lt_t_dayscholar','tuition','e_w_c_boarder','e_w_c_dayscholar','computer_packages','admission_fee','attachment_fee','exam','exam_knec','exam_nita','exam_kasneb','lab_practical','attachment','other') NOT NULL,
   amount DECIMAL(10,2) NOT NULL,
   academic_year VARCHAR(20) NOT NULL,
   semester TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS fee_payments (
   fee_structure_id INT UNSIGNED NOT NULL,
   amount_paid DECIMAL(10,2) NOT NULL,
   payment_date DATE NOT NULL,
-  payment_method ENUM('cash','bank','online','mpesa','equity_bank') NOT NULL,
+  payment_method ENUM('bank','online','mpesa','equity_bank') NOT NULL,
   receipt_no VARCHAR(50) NOT NULL,
   reference_no VARCHAR(100) NULL,
   received_by INT UNSIGNED NOT NULL,
@@ -190,8 +190,9 @@ SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEM
 SET @sql = IF((SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='course_id')='NO','ALTER TABLE students MODIFY COLUMN course_id INT UNSIGNED NULL','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 
 -- Payment and M-Pesa migration.
-ALTER TABLE fee_payments MODIFY payment_method ENUM('cash','bank','online','mpesa','equity_bank') NOT NULL;
+ALTER TABLE fee_payments MODIFY payment_method ENUM('bank','online','mpesa','equity_bank') NOT NULL;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='fee_structure' AND COLUMN_NAME='semester')=0,'ALTER TABLE fee_structure ADD COLUMN semester TINYINT UNSIGNED NOT NULL DEFAULT 1 AFTER academic_year','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+ALTER TABLE fee_structure MODIFY fee_type ENUM('boarding_lunch_boarder','boarding_lunch_dayscholar','admin_cost','p_emolument','medical_boarder','medical_dayscholar','lt_t_boarder','lt_t_dayscholar','tuition','e_w_c_boarder','e_w_c_dayscholar','computer_packages','admission_fee','attachment_fee','exam','exam_knec','exam_nita','exam_kasneb','lab_practical','attachment','other') NOT NULL;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='fee_payments' AND COLUMN_NAME='reference_no')=0,'ALTER TABLE fee_payments ADD COLUMN reference_no VARCHAR(100) NULL AFTER receipt_no','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 CREATE TABLE IF NOT EXISTS mpesa_transactions (
   transaction_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -213,5 +214,15 @@ CREATE TABLE IF NOT EXISTS mpesa_transactions (
   CONSTRAINT fk_mpesa_student FOREIGN KEY (student_id) REFERENCES students (student_id) ON DELETE RESTRICT,
   CONSTRAINT fk_mpesa_fee FOREIGN KEY (fee_structure_id) REFERENCES fee_structure (fee_structure_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Published 2026 fee schedule. Existing matching rows are preserved.
+CREATE TEMPORARY TABLE fixed_fee_seed (fee_type VARCHAR(40) NOT NULL, semester TINYINT UNSIGNED NOT NULL, amount DECIMAL(10,2) NOT NULL);
+INSERT INTO fixed_fee_seed VALUES
+('boarding_lunch_boarder',1,6500),('boarding_lunch_boarder',2,6500),('boarding_lunch_boarder',3,5300),('admin_cost',1,500),('admin_cost',2,300),('admin_cost',3,200),('p_emolument',1,3000),('p_emolument',2,2500),('p_emolument',3,2000),('medical_boarder',1,500),('medical_boarder',2,300),('medical_boarder',3,200),('lt_t_boarder',1,500),('lt_t_boarder',2,500),('lt_t_boarder',3,300),('tuition',1,500),('tuition',2,300),('tuition',3,200),('e_w_c_boarder',1,500),('e_w_c_boarder',2,200),('e_w_c_boarder',3,200),
+('boarding_lunch_dayscholar',1,4500),('boarding_lunch_dayscholar',2,4500),('boarding_lunch_dayscholar',3,3500),('admin_cost',1,500),('admin_cost',2,300),('admin_cost',3,200),('p_emolument',1,3000),('p_emolument',2,2500),('p_emolument',3,1800),('medical_dayscholar',1,300),('medical_dayscholar',2,300),('medical_dayscholar',3,200),('lt_t_dayscholar',1,400),('lt_t_dayscholar',2,400),('lt_t_dayscholar',3,400),('tuition',1,500),('tuition',2,300),('tuition',3,200),('e_w_c_dayscholar',1,300),('e_w_c_dayscholar',2,200),('e_w_c_dayscholar',3,200),('computer_packages',1,3500),('admission_fee',1,500),('attachment_fee',2,1500);
+INSERT INTO fee_structure (course_id,fee_type,amount,academic_year,semester)
+SELECT c.course_id,s.fee_type,s.amount,'2026',s.semester FROM courses c CROSS JOIN fixed_fee_seed s
+WHERE c.status='active' AND NOT EXISTS (SELECT 1 FROM fee_structure f WHERE f.course_id=c.course_id AND f.fee_type=s.fee_type AND f.academic_year='2026' AND f.semester=s.semester);
+DROP TEMPORARY TABLE fixed_fee_seed;
 
 SET FOREIGN_KEY_CHECKS = 1;

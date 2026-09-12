@@ -62,6 +62,18 @@ function currentStudent($pdo){
  return $student ?: null;
 }
 function money($n){return "KES ".number_format((float)$n,2);}
+function fixedFeeSchedule2026(){
+ return [
+  'year'=>'2026',
+  'boarder'=>[
+   ['Boarding / Lunch',6500,6500,5300],['Administration Cost',500,300,200],['P. Emolument',3000,2500,2000],['Medical',500,300,200],['L T & T',500,500,300],['Tuition',500,300,200],['E W & C',500,200,200]
+  ],
+  'dayscholar'=>[
+   ['Boarding / Lunch',4500,4500,3500],['Administration Cost',500,300,200],['P. Emolument',3000,2500,1800],['Medical',300,300,200],['L T & T',400,400,400],['Tuition',500,300,200],['E W & C',300,200,200]
+  ],
+  'mandatory'=>[['Computer Packages',3500],['Admission Fee',500],['Attachment Fee',1500]]
+ ];
+}
 function mpesaConfig(){
  return [
   'consumer_key'=>getenv('MPESA_CONSUMER_KEY') ?: '',
@@ -117,7 +129,7 @@ function moduleServices($module, $role=null){
   ],
   'finance'=>[
    'payments'=>['label'=>'Payments','path'=>'payments.php','description'=>'Record fees and issue receipts.'],
-   'fees'=>['label'=>'Fee Structure','path'=>'fees.php','description'=>'Maintain student charges.'],
+  'fees'=>['label'=>'Fee Structure','path'=>'fee_structure.php','description'=>'Maintain student charges.'],
    'expenses'=>['label'=>'Expenses','path'=>'expenses.php','description'=>'Record approved expenses.'],
    'reports'=>['label'=>'Reports','path'=>'reports.php','description'=>'Review financial summaries.']
   ],

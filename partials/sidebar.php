@@ -37,6 +37,7 @@ function isNavActive($pageName, $currentPage) {
                 <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard</a></li>
                 <li class="nav-item"><a href="profile.php" <?= isNavActive('profile.php', $currentPage) ?>><span class="nav-icon">👤</span> My Profile</a></li>
                 <li class="nav-item"><a href="fees.php" <?= isNavActive('fees.php', $currentPage) ?>><span class="nav-icon">💳</span> My Fees</a></li>
+                <li class="nav-item"><a href="fee_schedule_pdf.php" <?= isNavActive('fee_schedule_pdf.php', $currentPage) ?>><span class="nav-icon">📄</span> Fee Structure PDF</a></li>
                 <li class="nav-item"><a href="coursework.php" <?= isNavActive('coursework.php', $currentPage) ?>><span class="nav-icon">📚</span> Coursework & Marks</a></li>
                 <li class="nav-item"><a href="notices.php" <?= isNavActive('notices.php', $currentPage) ?>><span class="nav-icon">📣</span> Notices</a></li>
             

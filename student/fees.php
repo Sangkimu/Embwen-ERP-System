@@ -99,6 +99,7 @@ $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('al
         <?php endif; ?>
 
         <div class="action-bar">
+                    <a class="receipt-btn" style="padding:10px 15px;" href="fee_schedule_pdf.php">Download 2026 Fee Structure PDF</a>
             <button class="receipt-btn" style="padding:10px 15px;" onclick="window.print()">Print Complete Statement</button>
             <?php if($outstanding_balance > 0): ?>
                 <a href="payments/mpesa_trigger.php" class="btn-pay-now">Pay Balance via M-Pesa</a>
