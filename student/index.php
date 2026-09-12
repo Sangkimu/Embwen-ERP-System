@@ -16,7 +16,7 @@ $course_units = [];
 $outstanding_balance = 0;
 $active_sem_name = "No Active Semester";
 
-if($student) {
+if($student && tableExists($pdo,'semesters')) {
     // 1. Fetch current active semester details
     $sem_stmt = $pdo->query("SELECT semester_id, semester_name FROM semesters WHERE is_active = 1 LIMIT 1");
     $active_semester = $sem_stmt->fetch();
@@ -24,14 +24,18 @@ if($student) {
     $active_sem_name = $active_semester['semester_name'] ?? 'Active Semester';
 
     // 2. Fetch specific continuous assessment & workshop modular marks for this term
-    $marks_stmt = $pdo->prepare("SELECT unit_code_name, cat_mark, practical_mark, exam_mark FROM course_marks WHERE student_id = ? AND semester_id = ?");
-    $marks_stmt->execute([$student['student_id'], $current_sem_id]);
-    $course_units = $marks_stmt->fetchAll();
+    if(tableExists($pdo,'course_marks')) {
+        $marks_stmt = $pdo->prepare("SELECT unit_code_name, cat_mark, practical_mark, exam_mark FROM course_marks WHERE student_id = ? AND semester_id = ?");
+        $marks_stmt->execute([$student['student_id'], $current_sem_id]);
+        $course_units = $marks_stmt->fetchAll();
+    }
 
     // 3. Fetch this specific semester's fee invoice requirements
-    $fee_stmt = $pdo->prepare("SELECT current_fee_charged FROM enrollments WHERE student_id = ? AND semester_id = ? LIMIT 1");
-    $fee_stmt->execute([$student['student_id'], $current_sem_id]);
-    $current_invoice = $fee_stmt->fetchColumn() ?: 0;
+    if(tableExists($pdo,'enrollments')) {
+        $fee_stmt = $pdo->prepare("SELECT current_fee_charged FROM enrollments WHERE student_id = ? AND semester_id = ? LIMIT 1");
+        $fee_stmt->execute([$student['student_id'], $current_sem_id]);
+        $current_invoice = $fee_stmt->fetchColumn() ?: 0;
+    }
     
     // Calculate remaining balance dynamically
     $outstanding_balance = $current_invoice - $payments;

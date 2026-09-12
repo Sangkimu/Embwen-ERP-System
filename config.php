@@ -10,6 +10,11 @@ try {
 function requireLogin(){ if(empty($_SESSION['user'])){ header("Location: login.php"); exit; } }
 function user(){ return $_SESSION['user'] ?? null; }
 function allowed($modules=[]){ return in_array(user()['module'] ?? '', $modules, true) || (user()['role'] ?? '')==='super_admin'; }
+function tableExists($pdo,$table){
+ $stmt=$pdo->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?");
+ $stmt->execute([$table]);
+ return (bool)$stmt->fetchColumn();
+}
 function studentProfileComplete($student){
  return is_array($student) && !empty($student['id_no']) && !empty($student['phone']) && !empty($student['email']) && !empty($student['gender']);
 }
@@ -17,10 +22,44 @@ function requireCompleteStudentProfile($student){
  if(!studentProfileComplete($student)){ header('Location: complete_profile.php?required=1'); exit; }
 }
 function currentStudent($pdo){
- $username=(string)(user()['username']??'');
- $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s JOIN courses c ON c.course_id=s.course_id LEFT JOIN student_accounts sa ON sa.student_id=s.student_id AND sa.username=? WHERE sa.student_id IS NOT NULL OR s.id_no=? LIMIT 1");
+ $sessionUser=user();
+ $username=(string)($sessionUser['username']??'');
+ $email=trim((string)($sessionUser['email']??''));
+ $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN student_accounts sa ON sa.student_id=s.student_id AND sa.username=? WHERE sa.student_id IS NOT NULL OR s.id_no=? LIMIT 1");
  $stmt->execute([$username,$username]);
- return $stmt->fetch() ?: null;
+ $student=$stmt->fetch();
+ if($student){ return $student; }
+
+ $fullName=trim((string)($sessionUser['name']??''));
+ if($email!==''){
+  try{
+   $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id WHERE LOWER(TRIM(s.email))=LOWER(?) LIMIT 1");
+   $stmt->execute([$email]);
+   $student=$stmt->fetch();
+   if($student){ return $student; }
+  }catch(PDOException $e){
+   // Older databases may not have the optional profile email column yet.
+  }
+ }
+ if($fullName!==''){
+  $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id WHERE LOWER(TRIM(s.name))=LOWER(TRIM(?)) LIMIT 1");
+  $stmt->execute([$fullName]);
+  $student=$stmt->fetch();
+ }
+ if(!$student && $username!==''){
+  try{
+   $temporaryId='ONBOARD-'.$sessionUser['id'];
+   $stmt=$pdo->prepare("INSERT INTO students (id_no,name,course_id,status) VALUES (?,? ,NULL,'active')");
+   $stmt->execute([substr($temporaryId,0,30),$fullName!==''?$fullName:$username]);
+   $studentId=(int)$pdo->lastInsertId();
+   $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id WHERE s.student_id=? LIMIT 1");
+   $stmt->execute([$studentId]);
+   $student=$stmt->fetch();
+  }catch(PDOException $e){
+   $student=null;
+  }
+ }
+ return $student ?: null;
 }
 function money($n){return "KES ".number_format((float)$n,2);}
 function mpesaConfig(){

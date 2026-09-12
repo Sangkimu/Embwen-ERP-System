@@ -16,18 +16,19 @@ $active_sem_name = "No Active Semester";
 
 if($student) {
     // 2. Fetch active semester details
-    $sem_stmt = $pdo->query("SELECT semester_id, semester_name FROM semesters WHERE is_active = 1 LIMIT 1");
-    $active_semester = $sem_stmt->fetch();
+    $active_semester = tableExists($pdo,'semesters') ? $pdo->query("SELECT semester_id, semester_name FROM semesters WHERE is_active = 1 LIMIT 1")->fetch() : null;
     $current_sem_id = $active_semester['semester_id'] ?? 0;
     $active_sem_name = $active_semester['semester_name'] ?? 'Active Semester';
 
     // 3. Fetch this specific semester's invoiced amount
-    $fee_stmt = $pdo->prepare("SELECT current_fee_charged FROM enrollments WHERE student_id = ? AND semester_id = ? LIMIT 1");
-    $fee_stmt->execute([$student['student_id'], $current_sem_id]);
-    $current_invoice = $fee_stmt->fetchColumn() ?: 0;
+    if(tableExists($pdo,'enrollments')) {
+        $fee_stmt = $pdo->prepare("SELECT current_fee_charged FROM enrollments WHERE student_id = ? AND semester_id = ? LIMIT 1");
+        $fee_stmt->execute([$student['student_id'], $current_sem_id]);
+        $current_invoice = $fee_stmt->fetchColumn() ?: 0;
+    }
 
     // 4. Fetch lifetime comprehensive statement details from fee_payments
-    $statement_stmt = $pdo->prepare("SELECT payment_id, reference_no, amount_paid, payment_method, date_paid FROM fee_payments WHERE student_id = ? ORDER BY date_paid DESC");
+    $statement_stmt = $pdo->prepare("SELECT payment_id, receipt_no, amount_paid, payment_method, payment_date FROM fee_payments WHERE student_id = ? ORDER BY payment_date DESC");
     $statement_stmt->execute([$student['student_id']]);
     $statement = $statement_stmt->fetchAll();
 
@@ -82,9 +83,9 @@ $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('al
                 <tbody>
                     <?php foreach($statement as $pay): ?>
                         <tr>
-                            <td><b><?=htmlspecialchars($pay['reference_no'])?></b></td>
+                            <td><b><?=htmlspecialchars($pay['receipt_no'])?></b></td>
                             <td><?=htmlspecialchars(strtoupper($pay['payment_method']))?></td>
-                            <td><?=date('d-M-Y H:i', strtotime($pay['date_paid']))?></td>
+                            <td><?=date('d-M-Y', strtotime($pay['payment_date']))?></td>
                             <td style="color:#15803d; font-weight:600;"><?=money($pay['amount_paid'])?></td>
                             <td class="receipt-btn-col">
                                 <button class="receipt-btn" onclick="window.print()">Print Receipt</button>

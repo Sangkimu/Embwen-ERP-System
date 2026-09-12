@@ -31,6 +31,18 @@ PREPARE stmt_gender FROM @add_gender;
 EXECUTE stmt_gender;
 DEALLOCATE PREPARE stmt_gender;
 
+-- New student accounts start without a course and can be assigned later by
+-- an administrator after the student completes the profile.
+SET @allow_unassigned_course = IF(
+  (SELECT IS_NULLABLE FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'course_id') = 'NO',
+  'ALTER TABLE students MODIFY COLUMN course_id INT UNSIGNED NULL',
+  'SELECT 1'
+);
+PREPARE stmt_course FROM @allow_unassigned_course;
+EXECUTE stmt_course;
+DEALLOCATE PREPARE stmt_course;
+
 -- Confirm the resulting profile columns.
 SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE
 FROM information_schema.COLUMNS

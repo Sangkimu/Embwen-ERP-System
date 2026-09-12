@@ -68,6 +68,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     'id'=>$account['user_id'] ?? $account['admin_id'],
     'name'=>$account['full_name'],
     'username'=>$account['username'],
+    'email'=>$account['email'] ?? '',
     'module'=>$module,
     'role'=>$account['role'] ?? 'admin',
     'home'=>$home
