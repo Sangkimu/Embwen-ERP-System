@@ -7,7 +7,7 @@ try {
   PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC
  ]);
 } catch(PDOException $e){ die("Database connection failed."); }
-function requireLogin(){ if(empty($_SESSION['user'])){ header("Location: login.php"); exit; } }
+function requireLogin(){ if(empty($_SESSION['user'])){ header("Location: index.php"); exit; } }
 function user(){ return $_SESSION['user'] ?? null; }
 function allowed($modules=[]){ return in_array(user()['module'] ?? '', $modules, true) || (user()['role'] ?? '')==='super_admin'; }
 function tableExists($pdo,$table){

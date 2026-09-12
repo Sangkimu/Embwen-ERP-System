@@ -1,5 +1,4 @@
 <?php
-require_once "config.php";
-header("Location: login.php");
-exit;
+define('ERP_ENTRY_POINT', true);
+require_once "login.php";
 

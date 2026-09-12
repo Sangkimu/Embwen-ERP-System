@@ -1,1 +1,1 @@
-<?php require_once "config.php"; session_destroy(); header("Location: login.php"); exit; ?>
+<?php require_once "config.php"; session_destroy(); header("Location: index.php"); exit; ?>
