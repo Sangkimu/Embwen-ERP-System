@@ -77,18 +77,46 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     }
 }
 
-// --- 2. DATA QUERY RETRIEVAL BLOCK ---
+// --- 2. FILTERED DATA QUERY RETRIEVAL BLOCK ---
+$departmentId = filter_input(INPUT_GET, 'department_id', FILTER_VALIDATE_INT) ?: 0;
+$courseId = filter_input(INPUT_GET, 'course_id', FILTER_VALIDATE_INT) ?: 0;
+$semester = filter_input(INPUT_GET, 'semester', FILTER_VALIDATE_INT) ?: 0;
+$academicYear = trim($_GET['academic_year'] ?? '');
+$search = trim($_GET['search'] ?? '');
+$filters = [];
+$params = [];
+if ($departmentId) { $filters[] = 'c.department_id = ?'; $params[] = $departmentId; }
+if ($courseId) { $filters[] = 'c.course_id = ?'; $params[] = $courseId; }
+if ($semester >= 1 && $semester <= 3) { $filters[] = 'fs.semester = ?'; $params[] = $semester; }
+if ($academicYear !== '') { $filters[] = 'fs.academic_year = ?'; $params[] = $academicYear; }
+if ($search !== '') { $filters[] = '(s.name LIKE ? OR s.id_no LIKE ? OR c.course_code LIKE ?)'; $params[] = "%$search%"; $params[] = "%$search%"; $params[] = "%$search%"; }
+$where = $filters ? ' WHERE ' . implode(' AND ', $filters) : '';
+
 $query = "SELECT p.payment_id, p.amount_paid, p.payment_date, p.payment_method, p.receipt_no,
-                 s.name AS student_name, s.id_no AS student_adm, c.course_code, fs.fee_type, u.full_name AS clerk_name
+                 s.name AS student_name, s.id_no AS student_adm, c.course_code, fs.fee_type, fs.semester, fs.academic_year, d.department_name, u.full_name AS clerk_name
           FROM fee_payments p
           JOIN students s ON p.student_id = s.student_id
           JOIN fee_structure fs ON p.fee_structure_id = fs.fee_structure_id
           JOIN courses c ON fs.course_id = c.course_id
+          LEFT JOIN departments d ON c.department_id = d.department_id
           JOIN admin_users u ON p.received_by = u.admin_id
+          $where
           ORDER BY p.payment_date DESC, p.payment_id DESC";
-$payments = $pdo->query($query)->fetchAll();
-$students = $pdo->query("SELECT student_id, id_no, name FROM students WHERE status='active' ORDER BY name")->fetchAll();
-$feeStructures = $pdo->query("SELECT fs.fee_structure_id, fs.fee_type, fs.amount, fs.academic_year, c.course_code FROM fee_structure fs JOIN courses c ON c.course_id=fs.course_id ORDER BY c.course_code, fs.fee_type")->fetchAll();
+$stmt = $pdo->prepare($query);
+$stmt->execute($params);
+$payments = $stmt->fetchAll();
+$studentFilters = ["s.status='active'"];
+$studentParams = [];
+if ($departmentId) { $studentFilters[] = 'c.department_id = ?'; $studentParams[] = $departmentId; }
+if ($courseId) { $studentFilters[] = 's.course_id = ?'; $studentParams[] = $courseId; }
+if ($search !== '') { $studentFilters[] = '(s.name LIKE ? OR s.id_no LIKE ?)'; $studentParams[] = "%$search%"; $studentParams[] = "%$search%"; }
+$studentStmt = $pdo->prepare("SELECT s.student_id, s.id_no, s.name, c.course_code, d.department_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id WHERE " . implode(' AND ', $studentFilters) . " ORDER BY s.name");
+$studentStmt->execute($studentParams);
+$students = $studentStmt->fetchAll();
+$feeStructures = $pdo->query("SELECT fs.fee_structure_id, fs.fee_type, fs.amount, fs.academic_year, fs.semester, c.course_code FROM fee_structure fs JOIN courses c ON c.course_id=fs.course_id ORDER BY c.course_code, fs.academic_year DESC, fs.semester, fs.fee_type")->fetchAll();
+$departments = $pdo->query("SELECT department_id, department_name FROM departments ORDER BY department_name")->fetchAll();
+$courses = $pdo->query("SELECT course_id, course_code, course_name, department_id FROM courses WHERE status='active' ORDER BY course_code")->fetchAll();
+$years = $pdo->query("SELECT DISTINCT academic_year FROM fee_structure ORDER BY academic_year DESC")->fetchAll(PDO::FETCH_COLUMN);
 $dashboardLink = '../' . user()['home'];
 ?>
 <!doctype html>
@@ -133,6 +161,13 @@ $dashboardLink = '../' . user()['home'];
         .field-hint { display: block; margin-top: 5px; color: #718096; font-size: 11px; line-height: 1.4; }
         .modal-footer { display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px; border-top: 1px solid #edf2f7; padding-top: 15px; }
         .btn-secondary { background: #e2e8f0; color: #4a5568; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; }
+        .filter-bar { display: grid; grid-template-columns: 1.4fr repeat(4, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 18px; padding: 16px; background: #fff; border: 1px solid #edf2f7; border-radius: 8px; }
+        .filter-bar label { display: block; margin-bottom: 5px; color: #4a5568; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+        .filter-bar input, .filter-bar select { width: 100%; box-sizing: border-box; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px; background: #f7fafc; }
+        .filter-button { background: #1e3d73; color: #fff; border: 0; border-radius: 6px; padding: 10px 16px; cursor: pointer; font-weight: 600; }
+        .clear-link { display: inline-block; padding: 10px 4px; color: #1e3d73; font-size: 13px; font-weight: 700; text-decoration: none; }
+        @media(max-width: 950px) { .filter-bar { grid-template-columns: repeat(3, 1fr); } }
+        @media(max-width: 600px) { .filter-bar { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -162,6 +197,15 @@ $dashboardLink = '../' . user()['home'];
                 <button class="btn-primary" onclick="toggleModal(true)">+ Record Payment</button>
             </div>
 
+            <form class="filter-bar" method="get">
+                <div><label for="search">Search student</label><input id="search" name="search" value="<?=htmlspecialchars($search)?>" placeholder="Name, admission no. or course"></div>
+                <div><label for="department_id">Department</label><select id="department_id" name="department_id"><option value="">All departments</option><?php foreach($departments as $department):?><option value="<?= (int)$department['department_id']?>" <?= $departmentId===(int)$department['department_id']?'selected':''?>><?=htmlspecialchars($department['department_name'])?></option><?php endforeach;?></select></div>
+                <div><label for="course_id">Course</label><select id="course_id" name="course_id"><option value="">All courses</option><?php foreach($courses as $course):?><option value="<?= (int)$course['course_id']?>" data-department="<?= (int)$course['department_id']?>" <?= $courseId===(int)$course['course_id']?'selected':''?>><?=htmlspecialchars($course['course_code'].' - '.$course['course_name'])?></option><?php endforeach;?></select></div>
+                <div><label for="semester">Term</label><select id="semester" name="semester"><option value="">All terms</option><?php for($term=1;$term<=3;$term++):?><option value="<?=$term?>" <?= $semester===$term?'selected':''?>>Term <?=$term?></option><?php endfor;?></select></div>
+                <div><label for="academic_year">Academic year</label><select id="academic_year" name="academic_year"><option value="">All years</option><?php foreach($years as $year):?><option value="<?=htmlspecialchars($year)?>" <?= $academicYear===$year?'selected':''?>><?=htmlspecialchars($year)?></option><?php endforeach;?></select></div>
+                <div><button class="filter-button" type="submit">Search</button><a class="clear-link" href="payments.php">Clear</a></div>
+            </form>
+
             <div style="overflow-x: auto;">
                 <table class="data-table">
                     <thead>
@@ -169,6 +213,7 @@ $dashboardLink = '../' . user()['home'];
                             <th>Date</th>
                             <th>Receipt / Ref</th>
                             <th>Student Details</th>
+                            <th>Department / Term</th>
                             <th>Allocation Type</th>
                             <th>Channel Pathway</th>
                             <th>Amount Paid</th>
@@ -187,6 +232,7 @@ $dashboardLink = '../' . user()['home'];
                                         <div><b><?= htmlspecialchars($p['student_name']) ?></b></div>
                                         <small style="color:#718096;"><?= htmlspecialchars($p['student_adm']) ?> | <?= htmlspecialchars($p['course_code']) ?></small>
                                     </td>
+                                    <td><small><?=htmlspecialchars($p['department_name'] ?? 'Unassigned department')?></small><br><small style="color:#718096;">Term <?=htmlspecialchars($p['semester'])?> · <?=htmlspecialchars($p['academic_year'])?></small></td>
                                     <td><small class="badge" style="background:#ebf8ff; color:#2b6cb0; text-transform:none; font-weight:600;"><?= htmlspecialchars($p['course_code']) ?> - <?= str_replace('_', ' ', ucfirst($p['fee_type'])) ?></small></td>
                                     <td><span class="badge badge-<?= htmlspecialchars($p['payment_method']) ?>"><?= htmlspecialchars(ucfirst($p['payment_method'])) ?></span></td>
                                     <td><?= money($p['amount_paid']) ?></td>
@@ -206,8 +252,8 @@ $dashboardLink = '../' . user()['home'];
         <h2>Record Payment</h2>
         <form method="post">
             <input type="hidden" name="action" id="paymentAction" value="record_payment">
-            <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name']) ?></option><?php endforeach; ?></select></div>
-            <div class="form-group"><label for="fee_structure_id">Fee structure</label><select class="form-control" id="fee_structure_id" name="fee_structure_id" required><option value="">Select fee item</option><?php foreach($feeStructures as $fee): ?><option value="<?= (int)$fee['fee_structure_id'] ?>" data-amount="<?= htmlspecialchars((string)$fee['amount'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($fee['course_code'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')') ?></option><?php endforeach; ?></select><small class="field-hint" id="feeHint">Select a fee item to see its configured amount.</small></div>
+            <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name'].' ('.($student['course_code'] ?? 'Unassigned').')') ?></option><?php endforeach; ?></select><small class="field-hint">The list follows the department, course, and search filters above.</small></div>
+            <div class="form-group"><label for="fee_structure_id">Fee structure</label><select class="form-control" id="fee_structure_id" name="fee_structure_id" required><option value="">Select fee item</option><?php foreach($feeStructures as $fee): ?><option value="<?= (int)$fee['fee_structure_id'] ?>" data-amount="<?= htmlspecialchars((string)$fee['amount'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($fee['course_code'].' - Term '.$fee['semester'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')') ?></option><?php endforeach; ?></select><small class="field-hint" id="feeHint">Select a fee item to see its configured amount.</small></div>
             <div class="form-row"><div class="form-group"><label for="amount_paid">Amount paid (KES)</label><input class="form-control" id="amount_paid" name="amount_paid" type="number" min="0.01" step="0.01" inputmode="decimal" autocomplete="off" required><small class="field-hint">Partial payments are allowed.</small></div><div class="form-group"><label for="payment_method">Payment method</label><select class="form-control" id="payment_method" name="payment_method" required><option value="">Select method</option><option value="cash">Cash</option><option value="bank">Bank transfer</option><option value="equity_bank">Equity Bank</option><option value="online">Online</option><option value="mpesa">M-Pesa STK Push</option></select></div></div>
             <div class="form-group" id="phoneGroup" style="display:none"><label for="phone_number">M-Pesa phone number</label><input class="form-control" id="phone_number" name="phone_number" type="tel" inputmode="tel" autocomplete="tel" placeholder="0712345678"><small class="field-hint">The customer will receive a payment prompt on this number.</small></div>
             <div class="form-group" id="receiptGroup"><label for="receipt_no">Receipt number</label><input class="form-control" id="receipt_no" name="receipt_no" maxlength="50" autocomplete="off" placeholder="Enter the official receipt number"></div>
@@ -242,6 +288,16 @@ method.addEventListener('change',function(){
  receipt.required=!mpesa;
  submit.textContent=mpesa?'Send STK Push':'Save payment';
 });
+const departmentFilter=document.getElementById('department_id');
+const courseFilter=document.getElementById('course_id');
+if(departmentFilter&&courseFilter){
+ departmentFilter.addEventListener('change',function(){
+  Array.from(courseFilter.options).forEach(function(option){
+   option.hidden=option.value!==''&&option.dataset.department!==departmentFilter.value;
+  });
+  if(courseFilter.selectedOptions[0]&&courseFilter.selectedOptions[0].hidden) courseFilter.value='';
+ });
+}
 </script>
 </body>
 </html>

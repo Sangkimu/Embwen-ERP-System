@@ -16,7 +16,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Staff/admin accounts, departments, course catalog, notices
 -- =====================================================================
 
-CREATE TABLE admin_users (
+CREATE TABLE IF NOT EXISTS admin_users (
   admin_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   username      VARCHAR(100) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,          -- store bcrypt/argon2 hash, never plaintext
@@ -30,7 +30,7 @@ CREATE TABLE admin_users (
   UNIQUE KEY uq_admin_username (username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE departments (
+CREATE TABLE IF NOT EXISTS departments (
   department_id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
   department_name VARCHAR(150) NOT NULL,
   created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -38,7 +38,7 @@ CREATE TABLE departments (
   UNIQUE KEY uq_department_name (department_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE courses (
+CREATE TABLE IF NOT EXISTS courses (
   course_id       INT UNSIGNED NOT NULL AUTO_INCREMENT,
   course_code     VARCHAR(30)  NOT NULL,
   course_name     VARCHAR(150) NOT NULL,
@@ -52,7 +52,7 @@ CREATE TABLE courses (
     REFERENCES departments (department_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE notices (
+CREATE TABLE IF NOT EXISTS notices (
   notice_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
   title             VARCHAR(200) NOT NULL,
   content           TEXT NOT NULL,
@@ -69,11 +69,11 @@ CREATE TABLE notices (
 -- Deliberately minimal — ID number, name, course. Nothing else here.
 -- =====================================================================
 
-CREATE TABLE students (
+CREATE TABLE IF NOT EXISTS students (
   student_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
   id_no       VARCHAR(30)  NOT NULL,          -- college-issued student ID number
   name        VARCHAR(150) NOT NULL,
-  course_id   INT UNSIGNED NOT NULL,
+  course_id   INT UNSIGNED NULL,
   status      ENUM('active','graduated','withdrawn') NOT NULL DEFAULT 'active',
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (student_id),
@@ -82,7 +82,7 @@ CREATE TABLE students (
     REFERENCES courses (course_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE student_accounts (
+CREATE TABLE IF NOT EXISTS student_accounts (
   account_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
   student_id    INT UNSIGNED NOT NULL,
   username      VARCHAR(100) NOT NULL,        -- typically same as id_no
@@ -102,7 +102,7 @@ CREATE TABLE student_accounts (
 -- Admissions workflow, class/section allocation, student welfare
 -- =====================================================================
 
-CREATE TABLE admissions (
+CREATE TABLE IF NOT EXISTS admissions (
   admission_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   applicant_name    VARCHAR(150) NOT NULL,
   course_id         INT UNSIGNED NOT NULL,
@@ -120,7 +120,7 @@ CREATE TABLE admissions (
     REFERENCES students (student_id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE class_allocations (
+CREATE TABLE IF NOT EXISTS class_allocations (
   allocation_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
   student_id     INT UNSIGNED NOT NULL,
   course_id      INT UNSIGNED NOT NULL,
@@ -137,7 +137,7 @@ CREATE TABLE class_allocations (
     REFERENCES admin_users (admin_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE student_welfare (
+CREATE TABLE IF NOT EXISTS student_welfare (
   welfare_id     INT UNSIGNED NOT NULL AUTO_INCREMENT,
   student_id     INT UNSIGNED NOT NULL,
   category       ENUM('counseling','disciplinary','health','financial_aid','other') NOT NULL,
@@ -155,7 +155,7 @@ CREATE TABLE student_welfare (
     REFERENCES admin_users (admin_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE welfare_updates (
+CREATE TABLE IF NOT EXISTS welfare_updates (
   update_id      INT UNSIGNED NOT NULL AUTO_INCREMENT,
   welfare_id     INT UNSIGNED NOT NULL,
   note           TEXT NOT NULL,
@@ -173,7 +173,7 @@ CREATE TABLE welfare_updates (
 -- Fee structure per course, payments received, general expenses
 -- =====================================================================
 
-CREATE TABLE fee_structure (
+CREATE TABLE IF NOT EXISTS fee_structure (
   fee_structure_id  INT UNSIGNED NOT NULL AUTO_INCREMENT,
   course_id         INT UNSIGNED NOT NULL,
   fee_type          ENUM('tuition','exam','other') NOT NULL,
@@ -184,7 +184,7 @@ CREATE TABLE fee_structure (
     REFERENCES courses (course_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE fee_payments (
+CREATE TABLE IF NOT EXISTS fee_payments (
   payment_id        INT UNSIGNED NOT NULL AUTO_INCREMENT,
   student_id        INT UNSIGNED NOT NULL,
   fee_structure_id  INT UNSIGNED NOT NULL,
@@ -203,7 +203,7 @@ CREATE TABLE fee_payments (
     REFERENCES admin_users (admin_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE expenses (
+CREATE TABLE IF NOT EXISTS expenses (
   expense_id    INT UNSIGNED NOT NULL AUTO_INCREMENT,
   category      VARCHAR(100) NOT NULL,
   description   TEXT NULL,

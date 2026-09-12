@@ -9,6 +9,8 @@ $student=currentStudent($pdo);
 
 if(!$student) { die("System Profile mismatch error."); }
 
+$courses=$pdo->query("SELECT c.course_id,c.course_code,c.course_name,c.duration_months,d.department_name FROM courses c LEFT JOIN departments d ON d.department_id=c.department_id WHERE c.status='active' ORDER BY d.department_name,c.course_name")->fetchAll();
+
 $error = "";
 $profileRequired = isset($_GET['required']) && $_GET['required'] === '1';
 
@@ -18,12 +20,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $phone   = trim($_POST['phone'] ?? '');
     $email   = trim($_POST['email'] ?? '');
     $gender  = trim($_POST['gender'] ?? '');
+    $courseId = filter_input(INPUT_POST, 'course_id', FILTER_VALIDATE_INT);
 
-    if (!empty($id_no) && !empty($phone) && !empty($email) && !empty($gender)) {
+    if (!empty($id_no) && !empty($phone) && !empty($email) && !empty($gender) && $courseId) {
         try {
-            // Update table parameters securely using prepared bindings
-            $update = $pdo->prepare("UPDATE students SET id_no = ?, phone = ?, email = ?, gender = ?, status = 'active' WHERE student_id = ?");
-            $update->execute([$id_no, $phone, $email, $gender, $student['student_id']]);
+            $update = $pdo->prepare("UPDATE students SET id_no = ?, phone = ?, email = ?, gender = ?, course_id = ?, status = 'active' WHERE student_id = ?");
+            $update->execute([$id_no, $phone, $email, $gender, $courseId, $student['student_id']]);
             
             // Success! Unlock workspace by routing straight back to the index dashboard
             header("Location: index.php");
@@ -32,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "System registry error during submission: " . $e->getMessage();
         }
     } else {
-        $error = "Please fulfill all required verification tracking fields.";
+        $error = "Please complete all required details and select your course.";
     }
 }
 ?>
@@ -110,6 +112,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <label>Student Admission Code (Read-Only)</label>
                                 <input type="text" class="form-control" value="<?= htmlspecialchars($student['student_id'] ?? '') ?>" disabled style="background:#f1f5f9; color:#64748b; cursor: not-allowed;">
                             </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="course_id">Course and Department</label>
+                            <select id="course_id" name="course_id" class="form-control" required>
+                                <option value="">-- Select your course --</option>
+                                <?php foreach($courses as $course): ?>
+                                    <option value="<?= (int)$course['course_id'] ?>" <?= (int)($student['course_id'] ?? 0)===(int)$course['course_id']?'selected':'' ?>><?= htmlspecialchars(($course['department_name'] ?? 'Department pending').' - '.$course['course_code'].' - '.$course['course_name'].' ('.$course['duration_months'].' months)') ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <small style="display:block;margin-top:5px;color:#64748b;">The Dean's Office can review or correct this course assignment after registration.</small>
                         </div>
 
                         <div class="form-row">

@@ -12,20 +12,21 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&($_POST['action']??'')==='save_structure
     $feeType=$_POST['fee_type']??'';
     $amount=filter_input(INPUT_POST,'amount',FILTER_VALIDATE_FLOAT);
     $academicYear=trim($_POST['academic_year']??'');
+    $semester=filter_input(INPUT_POST,'semester',FILTER_VALIDATE_INT);
     $validTypes=['tuition','exam','other'];
 
-    if(!$courseId||$amount===false||$amount<0||$academicYear===''||!in_array($feeType,$validTypes,true)){
-        $message='Enter a valid course, fee type, amount and academic year.';
+    if(!$courseId||$amount===false||$amount<0||$academicYear===''||$semester<1||$semester>3||!in_array($feeType,$validTypes,true)){
+        $message='Enter a valid course, fee type, amount, academic year and term.';
         $messageClass='alert-danger';
     }else{
         try{
-            $check=$pdo->prepare('SELECT COUNT(*) FROM fee_structure WHERE course_id=? AND fee_type=? AND academic_year=?');
-            $check->execute([$courseId,$feeType,$academicYear]);
+            $check=$pdo->prepare('SELECT COUNT(*) FROM fee_structure WHERE course_id=? AND fee_type=? AND academic_year=? AND semester=?');
+            $check->execute([$courseId,$feeType,$academicYear,$semester]);
             if($check->fetchColumn()>0){
                 throw new Exception('This fee item already exists for the selected course and academic year.');
             }
-            $stmt=$pdo->prepare('INSERT INTO fee_structure (course_id,fee_type,amount,academic_year) VALUES (?,?,?,?)');
-            $stmt->execute([$courseId,$feeType,$amount,$academicYear]);
+            $stmt=$pdo->prepare('INSERT INTO fee_structure (course_id,fee_type,amount,academic_year,semester) VALUES (?,?,?,?,?)');
+            $stmt->execute([$courseId,$feeType,$amount,$academicYear,$semester]);
             $message='Fee structure saved successfully.';
             $messageClass='alert-success';
         }catch(Exception $e){
@@ -36,7 +37,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'&&($_POST['action']??'')==='save_structure
 }
 
 $courses=$pdo->query("SELECT course_id,course_code,course_name FROM courses WHERE status='active' ORDER BY course_code")->fetchAll();
-$structures=$pdo->query("SELECT fs.fee_structure_id,fs.fee_type,fs.amount,fs.academic_year,c.course_code,c.course_name FROM fee_structure fs JOIN courses c ON c.course_id=fs.course_id ORDER BY fs.academic_year DESC,c.course_code,fs.fee_type")->fetchAll();
+$structures=$pdo->query("SELECT fs.fee_structure_id,fs.fee_type,fs.amount,fs.academic_year,fs.semester,c.course_code,c.course_name FROM fee_structure fs JOIN courses c ON c.course_id=fs.course_id ORDER BY fs.academic_year DESC,fs.semester,c.course_code,fs.fee_type")->fetchAll();
 ?>
 <!doctype html>
 <html lang="en">
@@ -45,6 +46,6 @@ $structures=$pdo->query("SELECT fs.fee_structure_id,fs.fee_type,fs.amount,fs.aca
 </style></head>
 <body><div class="app"><aside class="sidebar"><?php include "../partials/sidebar.php";?></aside><main class="main"><header class="topbar"><div class="module-tag">Workspace / Finance / <b>Fee Structure</b></div><div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div></header><section class="content">
 <?php if($message):?><div class="fee-alert <?=htmlspecialchars($messageClass)?>"><?=htmlspecialchars($message)?></div><?php endif;?><div class="fee-head"><div><a class="back-link" href="<?=htmlspecialchars($dashboardLink)?>">← Back to dashboard</a><h1>Fee Structure</h1><p>Set course charges for each academic year.</p></div><button class="fee-button" type="button" onclick="toggleFeeModal(true)">+ Add fee item</button></div>
-<div style="overflow-x:auto"><table class="fee-table"><thead><tr><th>Academic year</th><th>Course</th><th>Fee type</th><th>Amount</th></tr></thead><tbody><?php if(!$structures):?><tr><td colspan="4" style="text-align:center;color:#78849a;padding:30px">No fee structure items found.</td></tr><?php else:foreach($structures as $structure):?><tr><td><?=htmlspecialchars($structure['academic_year'])?></td><td><b><?=htmlspecialchars($structure['course_code'])?></b><br><small><?=htmlspecialchars($structure['course_name'])?></small></td><td><span class="fee-type"><?=htmlspecialchars($structure['fee_type'])?></span></td><td><b><?=money($structure['amount'])?></b></td></tr><?php endforeach;endif;?></tbody></table></div>
+<div style="overflow-x:auto"><table class="fee-table"><thead><tr><th>Academic year</th><th>Term</th><th>Course</th><th>Fee type</th><th>Amount</th></tr></thead><tbody><?php if(!$structures):?><tr><td colspan="5" style="text-align:center;color:#78849a;padding:30px">No fee structure items found.</td></tr><?php else:foreach($structures as $structure):?><tr><td><?=htmlspecialchars($structure['academic_year'])?></td><td>Term <?=htmlspecialchars($structure['semester'])?></td><td><b><?=htmlspecialchars($structure['course_code'])?></b><br><small><?=htmlspecialchars($structure['course_name'])?></small></td><td><span class="fee-type"><?=htmlspecialchars($structure['fee_type'])?></span></td><td><b><?=money($structure['amount'])?></b></td></tr><?php endforeach;endif;?></tbody></table></div>
 </section></main></div>
-<div class="fee-modal" id="feeModal"><div class="fee-modal-box"><h2>Add fee item</h2><form method="post"><input type="hidden" name="action" value="save_structure"><div class="field"><label for="course_id">Course</label><select id="course_id" name="course_id" required><option value="">Select course</option><?php foreach($courses as $course):?><option value="<?= (int)$course['course_id']?>"><?=htmlspecialchars($course['course_code'].' - '.$course['course_name'])?></option><?php endforeach;?></select></div><div class="field"><label for="fee_type">Fee type</label><select id="fee_type" name="fee_type" required><option value="">Select fee type</option><option value="tuition">Tuition</option><option value="exam">Exam</option><option value="other">Other</option></select></div><div class="field"><label for="amount">Amount</label><input id="amount" name="amount" type="number" min="0" step="0.01" required></div><div class="field"><label for="academic_year">Academic year</label><input id="academic_year" name="academic_year" placeholder="2026/2027" maxlength="20" required></div><div class="modal-actions"><button class="cancel-button" type="button" onclick="toggleFeeModal(false)">Cancel</button><button class="fee-button" type="submit">Save fee item</button></div></form></div></div><script>function toggleFeeModal(show){document.getElementById('feeModal').classList.toggle('active',show);}</script></body></html>
+<div class="fee-modal" id="feeModal"><div class="fee-modal-box"><h2>Add fee item</h2><form method="post"><input type="hidden" name="action" value="save_structure"><div class="field"><label for="course_id">Course</label><select id="course_id" name="course_id" required><option value="">Select course</option><?php foreach($courses as $course):?><option value="<?= (int)$course['course_id']?>"><?=htmlspecialchars($course['course_code'].' - '.$course['course_name'])?></option><?php endforeach;?></select></div><div class="field"><label for="fee_type">Fee type</label><select id="fee_type" name="fee_type" required><option value="">Select fee type</option><option value="tuition">Tuition</option><option value="exam">Exam</option><option value="other">Other</option></select></div><div class="field"><label for="amount">Amount</label><input id="amount" name="amount" type="number" min="0" step="0.01" required></div><div class="field"><label for="academic_year">Academic year</label><input id="academic_year" name="academic_year" placeholder="2026/2027" maxlength="20" required></div><div class="field"><label for="semester">Term</label><select id="semester" name="semester" required><option value="">Select term</option><option value="1">Term 1</option><option value="2">Term 2</option><option value="3">Term 3</option></select></div><div class="modal-actions"><button class="cancel-button" type="button" onclick="toggleFeeModal(false)">Cancel</button><button class="fee-button" type="submit">Save fee item</button></div></form></div></div><script>function toggleFeeModal(show){document.getElementById('feeModal').classList.toggle('active',show);}</script></body></html>

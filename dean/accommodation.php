@@ -8,10 +8,11 @@ if(!allowed(['dean', 'admin'])){
 }
 
 $message = "";
+$studentSearch = trim($_GET['student_search'] ?? '');
 
 // Handle allocation request submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $student_id  = trim($_POST['student_id'] ?? '');
+    $student_id  = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
     $hostel_name = trim($_POST['hostel_name'] ?? '');
     $room_no     = trim($_POST['room_no'] ?? '');
 
@@ -39,7 +40,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch current allocated rooms to display below the input pane
-$allocations = $pdo->query("SELECT ha.*, s.name AS student_name FROM hostel_allocations ha JOIN students s ON s.student_id = ha.student_id WHERE ha.status = 'allocated' ORDER BY ha.allocated_at DESC")->fetchAll();
+$studentWhere = "s.status='active'";
+$studentParams = [];
+if ($studentSearch !== '') { $studentWhere .= " AND (s.name LIKE ? OR s.id_no LIKE ? OR c.course_code LIKE ?)"; $studentParams = ["%$studentSearch%", "%$studentSearch%", "%$studentSearch%"]; }
+$studentStmt = $pdo->prepare("SELECT s.student_id,s.id_no,s.name,c.course_code,d.department_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id WHERE $studentWhere ORDER BY s.name");
+$studentStmt->execute($studentParams);
+$students = $studentStmt->fetchAll();
+$allocations = $pdo->query("SELECT ha.*, s.name AS student_name, s.id_no, c.course_code, d.department_name FROM hostel_allocations ha JOIN students s ON s.student_id = ha.student_id LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id WHERE ha.status = 'allocated' ORDER BY ha.allocated_at DESC")->fetchAll();
 ?>
 <!doctype html>
 <html>
@@ -58,6 +65,8 @@ $allocations = $pdo->query("SELECT ha.*, s.name AS student_name FROM hostel_allo
         .room-table th { background: rgba(0,0,0,0.02); color: #475569; font-weight: 600; }
         .alert-success { background: #e6f4ea; border: 1px solid #34a853; color: #137333; padding: 12px; border-radius: 4px; margin-bottom: 15px; }
         .alert-danger { background: #fef2f2; border: 1px solid #fca5a5; color: #b91c1c; padding: 12px; border-radius: 4px; margin-bottom: 15px; }
+        .student-search { display:flex; gap:8px; margin-bottom:15px; }
+        .student-search input { flex:1; }
     </style>
 </head>
 <body>
@@ -81,10 +90,11 @@ $allocations = $pdo->query("SELECT ha.*, s.name AS student_name FROM hostel_allo
             <section class="card">
                 <h2>Assign Hostel Space</h2>
                 <form method="POST" action="accommodation.php" style="margin-top: 15px;">
+                    <div class="student-search"><input class="form-control" name="student_search" value="<?=htmlspecialchars($studentSearch)?>" placeholder="Search student name, admission number or course"><button class="btn-assign" type="submit" formmethod="get">Search</button></div>
                     <div class="form-row">
                         <div>
                             <label style="display:block; font-size:0.8rem; font-weight:bold; margin-bottom:5px; color:#475569;">STUDENT ID / ADMISSION</label>
-                            <input type="text" name="student_id" required class="form-control" placeholder="e.g., ENG/2026/004">
+                            <select name="student_id" required class="form-control"><option value="">-- Select student --</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>"><?=htmlspecialchars($student['id_no'].' - '.$student['name'].' | '.($student['department_name'] ?? 'Pending').' | '.($student['course_code'] ?? 'Course pending'))?></option><?php endforeach; ?></select>
                         </div>
                         <div>
                             <label style="display:block; font-size:0.8rem; font-weight:bold; margin-bottom:5px; color:#475569;">HOSTEL BLOCK NAME</label>
@@ -113,6 +123,7 @@ $allocations = $pdo->query("SELECT ha.*, s.name AS student_name FROM hostel_allo
                             <tr>
                                 <th>Student ID</th>
                                 <th>Student Name</th>
+                                <th>Course / Department</th>
                                 <th>Hostel Block</th>
                                 <th>Assigned Room</th>
                                 <th>Allocation Date</th>
@@ -122,7 +133,8 @@ $allocations = $pdo->query("SELECT ha.*, s.name AS student_name FROM hostel_allo
                             <?php foreach($allocations as $row): ?>
                                 <tr>
                                     <td><b><?= htmlspecialchars($row['student_id']) ?></b></td>
-                                    <td><?= htmlspecialchars($row['student_name']) ?></td>
+                                    <td><?= htmlspecialchars($row['student_name']) ?><br><small><?=htmlspecialchars($row['id_no'])?></small></td>
+                                    <td><?=htmlspecialchars($row['course_code'] ?? 'Pending')?> / <?=htmlspecialchars($row['department_name'] ?? 'Pending')?></td>
                                     <td><?= htmlspecialchars($row['hostel_name']) ?></td>
                                     <td><span style="font-weight:600; color:#1e3a8a;"><?= htmlspecialchars($row['room_no']) ?></span></td>
                                     <td><?= date('d-M-Y', strtotime($row['allocated_at'])) ?></td>

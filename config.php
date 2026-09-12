@@ -16,7 +16,7 @@ function tableExists($pdo,$table){
  return (bool)$stmt->fetchColumn();
 }
 function studentProfileComplete($student){
- return is_array($student) && !empty($student['id_no']) && !empty($student['phone']) && !empty($student['email']) && !empty($student['gender']);
+ return is_array($student) && !empty($student['id_no']) && !empty($student['phone']) && !empty($student['email']) && !empty($student['gender']) && !empty($student['course_id']);
 }
 function requireCompleteStudentProfile($student){
  if(!studentProfileComplete($student)){ header('Location: complete_profile.php?required=1'); exit; }
@@ -25,7 +25,7 @@ function currentStudent($pdo){
  $sessionUser=user();
  $username=(string)($sessionUser['username']??'');
  $email=trim((string)($sessionUser['email']??''));
- $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN student_accounts sa ON sa.student_id=s.student_id AND sa.username=? WHERE sa.student_id IS NOT NULL OR s.id_no=? LIMIT 1");
+ $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name,c.duration_months,d.department_id,d.department_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id LEFT JOIN student_accounts sa ON sa.student_id=s.student_id AND sa.username=? WHERE sa.student_id IS NOT NULL OR s.id_no=? LIMIT 1");
  $stmt->execute([$username,$username]);
  $student=$stmt->fetch();
  if($student){ return $student; }
@@ -33,7 +33,7 @@ function currentStudent($pdo){
  $fullName=trim((string)($sessionUser['name']??''));
  if($email!==''){
   try{
-   $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id WHERE LOWER(TRIM(s.email))=LOWER(?) LIMIT 1");
+  $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name,c.duration_months,d.department_id,d.department_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id WHERE LOWER(TRIM(s.email))=LOWER(?) LIMIT 1");
    $stmt->execute([$email]);
    $student=$stmt->fetch();
    if($student){ return $student; }
@@ -42,7 +42,7 @@ function currentStudent($pdo){
   }
  }
  if($fullName!==''){
-  $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id WHERE LOWER(TRIM(s.name))=LOWER(TRIM(?)) LIMIT 1");
+  $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name,c.duration_months,d.department_id,d.department_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id WHERE LOWER(TRIM(s.name))=LOWER(TRIM(?)) LIMIT 1");
   $stmt->execute([$fullName]);
   $student=$stmt->fetch();
  }
@@ -52,7 +52,7 @@ function currentStudent($pdo){
    $stmt=$pdo->prepare("INSERT INTO students (id_no,name,course_id,status) VALUES (?,? ,NULL,'active')");
    $stmt->execute([substr($temporaryId,0,30),$fullName!==''?$fullName:$username]);
    $studentId=(int)$pdo->lastInsertId();
-   $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id WHERE s.student_id=? LIMIT 1");
+  $stmt=$pdo->prepare("SELECT s.*,c.course_code,c.course_name,c.duration_months,d.department_id,d.department_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id WHERE s.student_id=? LIMIT 1");
    $stmt->execute([$studentId]);
    $student=$stmt->fetch();
   }catch(PDOException $e){
@@ -122,6 +122,8 @@ function moduleServices($module, $role=null){
    'reports'=>['label'=>'Reports','path'=>'reports.php','description'=>'Review financial summaries.']
   ],
   'dean'=>[
+    'courses'=>['label'=>'Courses','path'=>'../admin/courses.php','description'=>'Review course and department assignments.'],
+    'departments'=>['label'=>'Departments','path'=>'../admin/departments.php','description'=>'Review academic departments.'],
    'admissions'=>['label'=>'Admissions','path'=>'admissions.php','description'=>'Review applications and decisions.'],
    'classes'=>['label'=>'Class Allocation','path'=>'classes.php','description'=>'Assign students to classes.'],
     'welfare'=>['label'=>'Student Welfare','path'=>'welfare.php','description'=>'Manage student welfare cases.'],
@@ -136,7 +138,7 @@ function moduleServices($module, $role=null){
  $access=[
   'admin'=>['super_admin'=>['users','courses','departments','notices','finance'],'admin'=>['users','courses','departments','notices','finance'],'staff'=>['courses','departments','notices','finance']],
   'finance'=>['finance_manager'=>['payments','fees','expenses','reports'],'finance_officer'=>['payments','fees','reports'],'cashier'=>['payments']],
-    'dean'=>['dean'=>['admissions','classes','welfare','students'],'admissions_officer'=>['admissions'],'welfare_officer'=>['welfare'],'registrar'=>['admissions','classes','students']],
+    'dean'=>['dean'=>['courses','departments','admissions','classes','welfare','students'],'admissions_officer'=>['courses','departments','admissions'],'welfare_officer'=>['courses','departments','welfare'],'registrar'=>['courses','departments','admissions','classes','students']],
   'students'=>['student'=>['profile','fees','notices']]
  ];
  $keys=$access[$module][$role] ?? [];

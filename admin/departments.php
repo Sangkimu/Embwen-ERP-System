@@ -1,11 +1,17 @@
 <?php
 require_once "../config.php";
 requireLogin();
-if (!allowed(['admin', 'finance'])) {
+if (!allowed(['admin', 'finance', 'dean'])) {
     http_response_code(403);
     die("Access denied.");
 }
 
+$message='';
+if($_SERVER['REQUEST_METHOD']==='POST'){
+    $departmentName=trim($_POST['department_name']??'');
+    if($departmentName===''){$message='Enter a department name.';}
+    else{try{$stmt=$pdo->prepare('INSERT INTO departments (department_name) VALUES (?)');$stmt->execute([$departmentName]);$message='Department added successfully.';}catch(PDOException $e){$message='That department already exists or could not be saved.';}}
+}
 $departments = $pdo->query("SELECT department_id, department_name, created_at FROM departments ORDER BY department_name")->fetchAll();
 ?>
 <!doctype html>
@@ -23,6 +29,10 @@ $departments = $pdo->query("SELECT department_id, department_name, created_at FR
         table { width:100%; border-collapse:collapse; margin-top:20px; }
         th, td { border-bottom:1px solid #e5e7eb; padding:10px 12px; text-align:left; }
         th { background:#f8fafc; }
+        .registry-form { display:flex; gap:10px; margin-top:18px; }
+        .registry-form input { flex:1; padding:10px; border:1px solid #cbd5e0; border-radius:6px; }
+        .registry-form button { background:#1e3d73; color:#fff; border:0; border-radius:6px; padding:10px 16px; font-weight:700; }
+        .registry-message { padding:10px 12px; background:#e6f4ea; color:#137333; border-radius:6px; margin-top:15px; }
     </style>
 </head>
 <body>
@@ -33,6 +43,8 @@ $departments = $pdo->query("SELECT department_id, department_name, created_at FR
         <div class="card">
             <h1>Departments</h1>
             <p class="text-muted">Academic departments registered in the system.</p>
+            <?php if($message): ?><div class="registry-message"><?=htmlspecialchars($message)?></div><?php endif; ?>
+            <form class="registry-form" method="post"><input name="department_name" placeholder="e.g. Electrical Engineering" required><button type="submit">Add department</button></form>
             <table>
                 <thead>
                     <tr>

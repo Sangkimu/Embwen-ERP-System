@@ -28,7 +28,7 @@ $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('al
         <h2 style="margin-bottom:5px;"><?=htmlspecialchars($student['name']??user()['name'])?></h2>
         <p style="color:#64748b; font-size:0.85rem; margin:0 0 15px 0;">Status: <b style="color:#15803d;"><?=htmlspecialchars(strtoupper($student['status']??'ACTIVE'))?></b></p>
         <div class="service" style="text-align:left;">
-            <div><b>Course Registered:</b><small><?=htmlspecialchars($student['course_name']??'N/A')?></small></div>
+            <div><b>Course Registered:</b><small><?=htmlspecialchars($student['course_name']??'N/A')?><?=!empty($student['duration_months'])?' · '.htmlspecialchars($student['duration_months']).' months':''?></small></div>
         </div>
     </section>
 

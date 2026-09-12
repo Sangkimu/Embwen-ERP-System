@@ -1,4 +1,17 @@
 -- Run once against the vocational_erp database before enabling M-Pesa callbacks.
+SET @semester_column_exists = (
+  SELECT COUNT(*) FROM information_schema.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'fee_structure' AND COLUMN_NAME = 'semester'
+);
+SET @add_semester_column = IF(
+  @semester_column_exists = 0,
+  'ALTER TABLE fee_structure ADD COLUMN semester TINYINT UNSIGNED NOT NULL DEFAULT 1 AFTER academic_year',
+  'SELECT 1'
+);
+PREPARE add_semester_column FROM @add_semester_column;
+EXECUTE add_semester_column;
+DEALLOCATE PREPARE add_semester_column;
+
 ALTER TABLE fee_payments
   MODIFY payment_method ENUM('cash','bank','online','mpesa','equity_bank') NOT NULL;
 
