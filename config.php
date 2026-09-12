@@ -74,6 +74,13 @@ function fixedFeeSchedule2026(){
   'mandatory'=>[['Computer Packages',3500],['Admission Fee',500],['Attachment Fee',1500]]
  ];
 }
+function studentFeeSummary($pdo,$studentId){
+ $stmt=$pdo->prepare("SELECT COALESCE(SUM(fs.amount),0) AS billed,COALESCE((SELECT SUM(fp.amount_paid) FROM fee_payments fp WHERE fp.student_id=? AND fp.fee_structure_id=fs.fee_structure_id AND fp.amount_paid>0),0) AS paid FROM fee_structure fs JOIN students s ON s.course_id=fs.course_id WHERE s.student_id=?");
+ $stmt->execute([$studentId,$studentId]);
+ $summary=$stmt->fetch()?:['billed'=>0,'paid'=>0];
+ $summary['billed']=(float)$summary['billed'];$summary['paid']=(float)$summary['paid'];$summary['balance']=max(0,$summary['billed']-$summary['paid']);
+ return $summary;
+}
 function mpesaConfig(){
  return [
   'consumer_key'=>getenv('MPESA_CONSUMER_KEY') ?: '',

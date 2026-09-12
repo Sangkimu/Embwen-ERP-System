@@ -20,12 +20,8 @@ if($student) {
     $current_sem_id = $active_semester['semester_id'] ?? 0;
     $active_sem_name = $active_semester['semester_name'] ?? 'Active Semester';
 
-    // 3. Fetch this specific semester's invoiced amount
-    if(tableExists($pdo,'enrollments')) {
-        $fee_stmt = $pdo->prepare("SELECT current_fee_charged FROM enrollments WHERE student_id = ? AND semester_id = ? LIMIT 1");
-        $fee_stmt->execute([$student['student_id'], $current_sem_id]);
-        $current_invoice = $fee_stmt->fetchColumn() ?: 0;
-    }
+    $feeSummary=studentFeeSummary($pdo,$student['student_id']);
+    $current_invoice=$feeSummary['billed'];
 
     // 4. Fetch lifetime comprehensive statement details from fee_payments
     $statement_stmt = $pdo->prepare("SELECT payment_id, receipt_no, amount_paid, payment_method, payment_date FROM fee_payments WHERE student_id = ? ORDER BY payment_date DESC");
@@ -33,12 +29,10 @@ if($student) {
     $statement = $statement_stmt->fetchAll();
 
     // 5. Calculate lifetime total paid to date
-    $q=$pdo->prepare("SELECT COALESCE(SUM(amount_paid),0) FROM fee_payments WHERE student_id=?");
-    $q->execute([$student['student_id']]);
-    $payments_total = $q->fetchColumn();
+    $payments_total=$feeSummary['paid'];
 
     // 6. Calculate net pending amount matching current semester balance requirements
-    $outstanding_balance = $current_invoice - $payments_total;
+    $outstanding_balance=$feeSummary['balance'];
 }
 
 $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('all','students')")->fetchColumn();

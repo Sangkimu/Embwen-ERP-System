@@ -19,6 +19,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST['action'] ?? '') === 'initi
         $match = $pdo->prepare("SELECT COUNT(*) FROM students s JOIN fee_structure fs ON fs.course_id=s.course_id WHERE s.student_id=? AND fs.fee_structure_id=?");
         $match->execute([$studentId, $structureId]);
         if (!$match->fetchColumn()) { throw new Exception('The selected fee structure does not belong to this student course.'); }
+        $balanceStmt=$pdo->prepare("SELECT fs.amount-COALESCE((SELECT SUM(amount_paid) FROM fee_payments WHERE student_id=? AND fee_structure_id=? AND amount_paid>0),0) FROM fee_structure fs WHERE fs.fee_structure_id=?");
+        $balanceStmt->execute([$studentId,$structureId,$structureId]);
+        if ($amountPaid > max(0,(float)$balanceStmt->fetchColumn())) { throw new Exception('Payment exceeds the remaining balance for this fee item.'); }
         $response = mpesaStkPush($amountPaid, $phone, $accountReference, 'College fee payment');
         if (($response['ResponseCode'] ?? '1') !== '0' || empty($response['CheckoutRequestID'])) {
             throw new Exception($response['ResponseDescription'] ?? 'M-Pesa did not accept the payment request.');
@@ -53,6 +56,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             $match = $pdo->prepare("SELECT COUNT(*) FROM students s JOIN fee_structure fs ON fs.course_id=s.course_id WHERE s.student_id=? AND fs.fee_structure_id=?");
             $match->execute([$studentId, $structureId]);
             if (!$match->fetchColumn()) { throw new Exception('The selected fee structure does not belong to this student course.'); }
+            $balanceStmt=$pdo->prepare("SELECT fs.amount-COALESCE((SELECT SUM(amount_paid) FROM fee_payments WHERE student_id=? AND fee_structure_id=? AND amount_paid>0),0) FROM fee_structure fs WHERE fs.fee_structure_id=?");
+            $balanceStmt->execute([$studentId,$structureId,$structureId]);
+            if ($amountPaid > max(0,(float)$balanceStmt->fetchColumn())) { throw new Exception('Payment exceeds the remaining balance for this fee item.'); }
 
             $clerk = $pdo->prepare("SELECT admin_id FROM admin_users WHERE username=? AND status='active' LIMIT 1");
             $clerk->execute([user()['username']]);

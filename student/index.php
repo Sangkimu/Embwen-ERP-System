@@ -7,13 +7,13 @@ $student=currentStudent($pdo);
 requireCompleteStudentProfile($student);
 
 $payments=0;
-if($student){$q=$pdo->prepare("SELECT COALESCE(SUM(amount_paid),0) FROM fee_payments WHERE student_id=?");$q->execute([$student['student_id']]);$payments=$q->fetchColumn();}
+$outstanding_balance=0;
+if($student){$feeSummary=studentFeeSummary($pdo,$student['student_id']);$payments=$feeSummary['paid'];$outstanding_balance=$feeSummary['balance'];}
 $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('all','students')")->fetchColumn();
 $services=moduleServices('students',user()['role']);
 
 // --- NEW POLYTECHNIC CORE LOGIC ---
 $course_units = [];
-$outstanding_balance = 0;
 $active_sem_name = "No Active Semester";
 
 if($student && tableExists($pdo,'semesters')) {
