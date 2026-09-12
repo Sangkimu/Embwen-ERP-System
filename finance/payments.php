@@ -6,6 +6,9 @@ if(!allowed(['finance','admin'])){http_response_code(403);die("Access denied.");
 $message = '';
 $messageClass = '';
 
+$pdo->prepare("UPDATE mpesa_transactions SET status='failed', result_description=COALESCE(result_description,'Timed out or cancelled by user'), updated_at=NOW() WHERE status='pending' AND created_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)")->execute();
+$failedMpesaTxns = $pdo->query("SELECT mt.transaction_id, mt.amount, mt.phone_number, mt.status, mt.result_description, mt.updated_at, s.name AS student_name, c.course_code, fs.fee_type FROM mpesa_transactions mt JOIN students s ON s.student_id = mt.student_id JOIN fee_structure fs ON fs.fee_structure_id = mt.fee_structure_id JOIN courses c ON c.course_id = fs.course_id WHERE mt.status='failed' ORDER BY mt.updated_at DESC LIMIT 10")->fetchAll();
+
 if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST['action'] ?? '') === 'initiate_mpesa') {
     $studentId = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
     $structureId = filter_input(INPUT_POST, 'fee_structure_id', FILTER_VALIDATE_INT);
@@ -212,6 +215,12 @@ $dashboardLink = '../' . user()['home'];
                 <button class="btn-primary" onclick="toggleModal(true)">+ Record Payment</button>
             </div>
 
+            <?php if (!empty($failedMpesaTxns)): ?>
+                <div class="alert alert-danger">
+                    <strong>STK status notice:</strong> <?= count($failedMpesaTxns) ?> payment request(s) were cancelled or timed out and are visible below as failed M-Pesa attempts.
+                </div>
+            <?php endif; ?>
+
             <form class="filter-bar" method="get">
                 <div><label for="search">Search student</label><input id="search" name="search" value="<?=htmlspecialchars($search)?>" placeholder="Name, admission no. or course"></div>
                 <div><label for="department_id">Department</label><select id="department_id" name="department_id"><option value="">All departments</option><?php foreach($departments as $department):?><option value="<?= (int)$department['department_id']?>" <?= $departmentId===(int)$department['department_id']?'selected':''?>><?=htmlspecialchars($department['department_name'])?></option><?php endforeach;?></select></div>
@@ -220,6 +229,37 @@ $dashboardLink = '../' . user()['home'];
                 <div><label for="academic_year">Academic year</label><select id="academic_year" name="academic_year"><option value="">All years</option><?php foreach($years as $year):?><option value="<?=htmlspecialchars($year)?>" <?= $academicYear===$year?'selected':''?>><?=htmlspecialchars($year)?></option><?php endforeach;?></select></div>
                 <div><button class="filter-button" type="submit">Search</button><a class="clear-link" href="payments.php">Clear</a></div>
             </form>
+
+            <?php if (!empty($failedMpesaTxns)): ?>
+                <div style="margin: 0 0 18px; overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>STK Status</th>
+                                <th>Student</th>
+                                <th>Course</th>
+                                <th>Amount</th>
+                                <th>Phone</th>
+                                <th>Reason</th>
+                                <th>Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($failedMpesaTxns as $failed): ?>
+                                <tr>
+                                    <td><span class="badge badge-mpesa" style="background:#fed7d7;color:#742a2a;">Failed</span></td>
+                                    <td><?= htmlspecialchars($failed['student_name']) ?></td>
+                                    <td><?= htmlspecialchars($failed['course_code'].' - '.$failed['fee_type']) ?></td>
+                                    <td><?= money($failed['amount']) ?></td>
+                                    <td><?= htmlspecialchars($failed['phone_number']) ?></td>
+                                    <td><?= htmlspecialchars($failed['result_description'] ?: 'Cancelled or timed out by user') ?></td>
+                                    <td><?= htmlspecialchars(date('d-M-Y H:i', strtotime($failed['updated_at']))) ?></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php endif; ?>
 
             <div style="overflow-x: auto;">
                 <table class="data-table">
@@ -272,7 +312,13 @@ $dashboardLink = '../' . user()['home'];
             <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>" data-course="<?= (int)($student['course_id'] ?? 0) ?>" data-residency="<?=htmlspecialchars($student['residency']??'')?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name'].' ('.($student['course_code'] ?? 'Unassigned').' / '.($student['residency'] ?? 'Classification pending').')') ?></option><?php endforeach; ?></select><small class="field-hint">Fee items are limited to this student's course and fee classification.</small></div>
             <div class="form-group"><label for="fee_structure_id">Fee structure</label><select class="form-control" id="fee_structure_id" name="fee_structure_id" required><option value="">Select fee item</option><?php foreach($feeStructures as $fee): ?><option value="<?= (int)$fee['fee_structure_id'] ?>" data-course="<?= (int)$fee['course_id'] ?>" data-residency="<?=htmlspecialchars($fee['residency_scope'])?>" data-amount="<?= htmlspecialchars((string)$fee['amount'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($fee['course_code'].' - Term '.$fee['semester'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')') ?></option><?php endforeach; ?></select><small class="field-hint" id="feeHint">Select a student first, then choose a fee item for that student's course.</small></div>
             <div class="form-row"><div class="form-group"><label for="amount_paid">Amount paid (KES)</label><input class="form-control" id="amount_paid" name="amount_paid" type="number" min="0.01" step="0.01" inputmode="decimal" autocomplete="off" required><small class="field-hint">Partial payments are allowed. Cash payments are not accepted.</small></div><div class="form-group"><label for="payment_method">Payment method</label><select class="form-control" id="payment_method" name="payment_method" required><option value="">Select method</option><option value="bank">Bank transfer</option><option value="equity_bank">Equity Bank</option><option value="online">Online</option><option value="mpesa">M-Pesa STK Push</option></select></div></div>
-            <div class="form-group" id="phoneGroup" style="display:none"><label for="phone_number">M-Pesa phone number</label><input class="form-control" id="phone_number" name="phone_number" type="tel" inputmode="tel" autocomplete="tel" placeholder="0712345678"><small class="field-hint">The customer will receive a payment prompt on this number.</small></div>
+            <div id="mpesaContainer" style="display:none; border:1px solid #dbeafe; background:#f8fbff; border-radius:8px; padding:16px; margin-bottom:18px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3 style="margin:0; font-size:16px; color:#1e3d73;">M-Pesa payment</h3>
+                    <span style="background:#d1fae5; color:#065f46; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:700; text-transform:uppercase;">STK Push</span>
+                </div>
+                <div class="form-group" id="phoneGroup" style="margin-bottom:0"><label for="phone_number">M-Pesa phone number</label><input class="form-control" id="phone_number" name="phone_number" type="tel" inputmode="tel" autocomplete="tel" placeholder="0712345678"><small class="field-hint">The customer will receive a payment prompt on this number. If cancelled, the request stays pending and is marked failed after timeout.</small></div>
+            </div>
             <div class="form-group" id="receiptGroup"><label for="receipt_no">Receipt number</label><input class="form-control" id="receipt_no" name="receipt_no" maxlength="50" autocomplete="off" placeholder="Enter the official receipt number"></div>
             <div class="modal-footer"><button type="button" class="btn-secondary" onclick="toggleModal(false)">Cancel</button><button type="submit" class="btn-primary" id="submitPayment">Save payment</button></div>
         </form>
@@ -285,6 +331,7 @@ const feeStructure=document.getElementById('fee_structure_id');
 const amount=document.getElementById('amount_paid');
 const feeHint=document.getElementById('feeHint');
 const action=document.getElementById('paymentAction');
+const mpesaContainer=document.getElementById('mpesaContainer');
 const phoneGroup=document.getElementById('phoneGroup');
 const phone=document.getElementById('phone_number');
 const receiptGroup=document.getElementById('receiptGroup');
@@ -310,11 +357,12 @@ feeStructure.addEventListener('change',function(){
 method.addEventListener('change',function(){
  const mpesa=this.value==='mpesa';
  action.value=mpesa?'initiate_mpesa':'record_payment';
- phoneGroup.style.display=mpesa?'flex':'none';
- receiptGroup.style.display=mpesa?'none':'flex';
+ mpesaContainer.style.display=mpesa ? 'block' : 'none';
+ phoneGroup.style.display=mpesa ? 'flex' : 'none';
+ receiptGroup.style.display=mpesa ? 'none' : 'flex';
  phone.required=mpesa;
  receipt.required=!mpesa;
- submit.textContent=mpesa?'Send STK Push':'Save payment';
+ submit.textContent=mpesa ? 'Send STK Push' : 'Save payment';
 });
 const departmentFilter=document.getElementById('department_id');
 const courseFilter=document.getElementById('course_id');

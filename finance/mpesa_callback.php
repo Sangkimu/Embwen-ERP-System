@@ -3,6 +3,8 @@ require_once "../config.php";
 header('Content-Type: application/json');
 
 $payload=file_get_contents('php://input');
+file_put_contents(__DIR__.'/mpesa_callback_log.txt', date('c')."\n".$payload."\n\n", FILE_APPEND);
+
 $data=json_decode($payload,true);
 $callback=$data['Body']['stkCallback'] ?? null;
 if(!$callback || empty($callback['CheckoutRequestID'])){http_response_code(400);echo json_encode(['ResultCode'=>1,'ResultDesc'=>'Invalid callback payload']);exit;}
