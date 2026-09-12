@@ -6,9 +6,9 @@ $search=trim($_GET['search']??'');
 $studentProfile=null;
 $statementLogs=[];
 if($search!==''){
- $stmt=$pdo->prepare("SELECT s.student_id,s.id_no,s.name,s.status,c.course_name,c.course_code,COALESCE((SELECT SUM(fs.amount) FROM fee_structure fs WHERE fs.course_id=s.course_id),0) AS total_billed,COALESCE((SELECT SUM(fp.amount_paid) FROM fee_payments fp WHERE fp.student_id=s.student_id),0) AS total_paid FROM students s JOIN courses c ON c.course_id=s.course_id WHERE s.id_no=? OR s.name LIKE ? LIMIT 1");
+ $stmt=$pdo->prepare("SELECT s.student_id,s.id_no,s.name,s.status,c.course_name,c.course_code,c.duration_months,d.department_name,COALESCE((SELECT SUM(fs.amount) FROM fee_structure fs WHERE fs.course_id=s.course_id),0) AS total_billed,COALESCE((SELECT SUM(fp.amount_paid) FROM fee_payments fp WHERE fp.student_id=s.student_id),0) AS total_paid FROM students s JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id WHERE s.id_no=? OR s.name LIKE ? LIMIT 1");
  $stmt->execute([$search,"%$search%"]);$studentProfile=$stmt->fetch();
- if($studentProfile){$log=$pdo->prepare("SELECT fp.payment_date,fp.receipt_no,fp.amount_paid,fp.payment_method,fs.fee_type FROM fee_payments fp JOIN fee_structure fs ON fs.fee_structure_id=fp.fee_structure_id WHERE fp.student_id=? ORDER BY fp.payment_date DESC,fp.payment_id DESC");$log->execute([$studentProfile['student_id']]);$statementLogs=$log->fetchAll();}
+ if($studentProfile){$log=$pdo->prepare("SELECT fp.payment_date,fp.receipt_no,fp.amount_paid,fp.payment_method,fs.fee_type,fs.academic_year,fs.semester FROM fee_payments fp JOIN fee_structure fs ON fs.fee_structure_id=fp.fee_structure_id WHERE fp.student_id=? ORDER BY fp.payment_date DESC,fp.payment_id DESC");$log->execute([$studentProfile['student_id']]);$statementLogs=$log->fetchAll();}
 }
 $dashboardLink='../'.user()['home'];
 ?>

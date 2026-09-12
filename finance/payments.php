@@ -16,6 +16,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST['action'] ?? '') === 'initi
         if (!$studentId || !$structureId || $amountPaid <= 0 || $phone === '') {
             throw new Exception('Student, fee item, amount, and phone number are required.');
         }
+        $match = $pdo->prepare("SELECT COUNT(*) FROM students s JOIN fee_structure fs ON fs.course_id=s.course_id WHERE s.student_id=? AND fs.fee_structure_id=?");
+        $match->execute([$studentId, $structureId]);
+        if (!$match->fetchColumn()) { throw new Exception('The selected fee structure does not belong to this student course.'); }
         $response = mpesaStkPush($amountPaid, $phone, $accountReference, 'College fee payment');
         if (($response['ResponseCode'] ?? '1') !== '0' || empty($response['CheckoutRequestID'])) {
             throw new Exception($response['ResponseDescription'] ?? 'M-Pesa did not accept the payment request.');
@@ -46,6 +49,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
     if ($studentId && $structureId && $amountPaid > 0 && !empty($receiptNo) && in_array($paymentMethod, $validMethods, true)) {
         try {
             $pdo->beginTransaction();
+
+            $match = $pdo->prepare("SELECT COUNT(*) FROM students s JOIN fee_structure fs ON fs.course_id=s.course_id WHERE s.student_id=? AND fs.fee_structure_id=?");
+            $match->execute([$studentId, $structureId]);
+            if (!$match->fetchColumn()) { throw new Exception('The selected fee structure does not belong to this student course.'); }
 
             $clerk = $pdo->prepare("SELECT admin_id FROM admin_users WHERE username=? AND status='active' LIMIT 1");
             $clerk->execute([user()['username']]);
@@ -93,7 +100,7 @@ if ($search !== '') { $filters[] = '(s.name LIKE ? OR s.id_no LIKE ? OR c.course
 $where = $filters ? ' WHERE ' . implode(' AND ', $filters) : '';
 
 $query = "SELECT p.payment_id, p.amount_paid, p.payment_date, p.payment_method, p.receipt_no,
-                 s.name AS student_name, s.id_no AS student_adm, c.course_code, fs.fee_type, fs.semester, fs.academic_year, d.department_name, u.full_name AS clerk_name
+                 s.name AS student_name, s.id_no AS student_adm, c.course_code, c.course_name, c.duration_months, fs.fee_type, fs.semester, fs.academic_year, d.department_name, u.full_name AS clerk_name
           FROM fee_payments p
           JOIN students s ON p.student_id = s.student_id
           JOIN fee_structure fs ON p.fee_structure_id = fs.fee_structure_id
@@ -110,10 +117,10 @@ $studentParams = [];
 if ($departmentId) { $studentFilters[] = 'c.department_id = ?'; $studentParams[] = $departmentId; }
 if ($courseId) { $studentFilters[] = 's.course_id = ?'; $studentParams[] = $courseId; }
 if ($search !== '') { $studentFilters[] = '(s.name LIKE ? OR s.id_no LIKE ?)'; $studentParams[] = "%$search%"; $studentParams[] = "%$search%"; }
-$studentStmt = $pdo->prepare("SELECT s.student_id, s.id_no, s.name, c.course_code, d.department_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id WHERE " . implode(' AND ', $studentFilters) . " ORDER BY s.name");
+$studentStmt = $pdo->prepare("SELECT s.student_id, s.id_no, s.name, s.course_id, c.course_code, d.department_name FROM students s LEFT JOIN courses c ON c.course_id=s.course_id LEFT JOIN departments d ON d.department_id=c.department_id WHERE " . implode(' AND ', $studentFilters) . " ORDER BY s.name");
 $studentStmt->execute($studentParams);
 $students = $studentStmt->fetchAll();
-$feeStructures = $pdo->query("SELECT fs.fee_structure_id, fs.fee_type, fs.amount, fs.academic_year, fs.semester, c.course_code FROM fee_structure fs JOIN courses c ON c.course_id=fs.course_id ORDER BY c.course_code, fs.academic_year DESC, fs.semester, fs.fee_type")->fetchAll();
+$feeStructures = $pdo->query("SELECT fs.fee_structure_id, fs.course_id, fs.fee_type, fs.amount, fs.academic_year, fs.semester, c.course_code FROM fee_structure fs JOIN courses c ON c.course_id=fs.course_id ORDER BY c.course_code, fs.academic_year DESC, fs.semester, fs.fee_type")->fetchAll();
 $departments = $pdo->query("SELECT department_id, department_name FROM departments ORDER BY department_name")->fetchAll();
 $courses = $pdo->query("SELECT course_id, course_code, course_name, department_id FROM courses WHERE status='active' ORDER BY course_code")->fetchAll();
 $years = $pdo->query("SELECT DISTINCT academic_year FROM fee_structure ORDER BY academic_year DESC")->fetchAll(PDO::FETCH_COLUMN);
@@ -213,7 +220,7 @@ $dashboardLink = '../' . user()['home'];
                             <th>Date</th>
                             <th>Receipt / Ref</th>
                             <th>Student Details</th>
-                            <th>Department / Term</th>
+                            <th>Department / Course Period</th>
                             <th>Allocation Type</th>
                             <th>Channel Pathway</th>
                             <th>Amount Paid</th>
@@ -230,9 +237,9 @@ $dashboardLink = '../' . user()['home'];
                                     <td><span style="font-weight:700; color:#2d3748; display:block;"><?= htmlspecialchars($p['receipt_no']) ?></span></td>
                                     <td>
                                         <div><b><?= htmlspecialchars($p['student_name']) ?></b></div>
-                                        <small style="color:#718096;"><?= htmlspecialchars($p['student_adm']) ?> | <?= htmlspecialchars($p['course_code']) ?></small>
+                                        <small style="color:#718096;"><?= htmlspecialchars($p['student_adm']) ?> | <?= htmlspecialchars($p['course_code']) ?> - <?= htmlspecialchars($p['course_name']) ?></small>
                                     </td>
-                                    <td><small><?=htmlspecialchars($p['department_name'] ?? 'Unassigned department')?></small><br><small style="color:#718096;">Term <?=htmlspecialchars($p['semester'])?> · <?=htmlspecialchars($p['academic_year'])?></small></td>
+                                    <td><small><?=htmlspecialchars($p['department_name'] ?? 'Unassigned department')?></small><br><small style="color:#718096;"><?=htmlspecialchars($p['duration_months'])?> months · Term <?=htmlspecialchars($p['semester'])?> · <?=htmlspecialchars($p['academic_year'])?></small></td>
                                     <td><small class="badge" style="background:#ebf8ff; color:#2b6cb0; text-transform:none; font-weight:600;"><?= htmlspecialchars($p['course_code']) ?> - <?= str_replace('_', ' ', ucfirst($p['fee_type'])) ?></small></td>
                                     <td><span class="badge badge-<?= htmlspecialchars($p['payment_method']) ?>"><?= htmlspecialchars(ucfirst($p['payment_method'])) ?></span></td>
                                     <td><?= money($p['amount_paid']) ?></td>
@@ -252,8 +259,8 @@ $dashboardLink = '../' . user()['home'];
         <h2>Record Payment</h2>
         <form method="post">
             <input type="hidden" name="action" id="paymentAction" value="record_payment">
-            <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name'].' ('.($student['course_code'] ?? 'Unassigned').')') ?></option><?php endforeach; ?></select><small class="field-hint">The list follows the department, course, and search filters above.</small></div>
-            <div class="form-group"><label for="fee_structure_id">Fee structure</label><select class="form-control" id="fee_structure_id" name="fee_structure_id" required><option value="">Select fee item</option><?php foreach($feeStructures as $fee): ?><option value="<?= (int)$fee['fee_structure_id'] ?>" data-amount="<?= htmlspecialchars((string)$fee['amount'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($fee['course_code'].' - Term '.$fee['semester'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')') ?></option><?php endforeach; ?></select><small class="field-hint" id="feeHint">Select a fee item to see its configured amount.</small></div>
+            <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>" data-course="<?= (int)($student['course_id'] ?? 0) ?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name'].' ('.($student['course_code'] ?? 'Unassigned').')') ?></option><?php endforeach; ?></select><small class="field-hint">The list follows the department, course, and search filters above.</small></div>
+            <div class="form-group"><label for="fee_structure_id">Fee structure</label><select class="form-control" id="fee_structure_id" name="fee_structure_id" required><option value="">Select fee item</option><?php foreach($feeStructures as $fee): ?><option value="<?= (int)$fee['fee_structure_id'] ?>" data-course="<?= (int)$fee['course_id'] ?>" data-amount="<?= htmlspecialchars((string)$fee['amount'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($fee['course_code'].' - Term '.$fee['semester'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')') ?></option><?php endforeach; ?></select><small class="field-hint" id="feeHint">Select a student first, then choose a fee item for that student's course.</small></div>
             <div class="form-row"><div class="form-group"><label for="amount_paid">Amount paid (KES)</label><input class="form-control" id="amount_paid" name="amount_paid" type="number" min="0.01" step="0.01" inputmode="decimal" autocomplete="off" required><small class="field-hint">Partial payments are allowed.</small></div><div class="form-group"><label for="payment_method">Payment method</label><select class="form-control" id="payment_method" name="payment_method" required><option value="">Select method</option><option value="cash">Cash</option><option value="bank">Bank transfer</option><option value="equity_bank">Equity Bank</option><option value="online">Online</option><option value="mpesa">M-Pesa STK Push</option></select></div></div>
             <div class="form-group" id="phoneGroup" style="display:none"><label for="phone_number">M-Pesa phone number</label><input class="form-control" id="phone_number" name="phone_number" type="tel" inputmode="tel" autocomplete="tel" placeholder="0712345678"><small class="field-hint">The customer will receive a payment prompt on this number.</small></div>
             <div class="form-group" id="receiptGroup"><label for="receipt_no">Receipt number</label><input class="form-control" id="receipt_no" name="receipt_no" maxlength="50" autocomplete="off" placeholder="Enter the official receipt number"></div>
@@ -273,6 +280,16 @@ const phone=document.getElementById('phone_number');
 const receiptGroup=document.getElementById('receiptGroup');
 const receipt=document.getElementById('receipt_no');
 const submit=document.getElementById('submitPayment');
+const student=document.getElementById('student_id');
+student.addEventListener('change',function(){
+ const courseId=this.options[this.selectedIndex].dataset.course||'';
+ Array.from(feeStructure.options).forEach(function(option){
+  option.hidden=option.value!==''&&option.dataset.course!==courseId;
+ });
+ feeStructure.value='';
+ amount.value='';
+ feeHint.textContent=courseId?'Only fee items for the selected student course are shown.':'Select a student first.';
+});
 feeStructure.addEventListener('change',function(){
  const selected=this.options[this.selectedIndex];
  const configuredAmount=selected.dataset.amount||'';
