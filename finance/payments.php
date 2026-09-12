@@ -106,7 +106,9 @@ if ($search !== '') { $filters[] = '(s.name LIKE ? OR s.id_no LIKE ? OR c.course
 $where = $filters ? ' WHERE ' . implode(' AND ', $filters) : '';
 
 $query = "SELECT p.payment_id, p.amount_paid, p.payment_date, p.payment_method, p.receipt_no,
-                 s.name AS student_name, s.id_no AS student_adm, c.course_code, c.course_name, c.duration_months, fs.fee_type, fs.semester, fs.academic_year, d.department_name, u.full_name AS clerk_name
+                 s.name AS student_name, s.id_no AS student_adm, c.course_code, c.course_name, c.duration_months, fs.fee_type, fs.semester, fs.academic_year, d.department_name, u.full_name AS clerk_name,
+                 (SELECT COALESCE(SUM(fs2.amount),0) FROM fee_structure fs2 WHERE fs2.course_id=s.course_id) AS student_billed,
+                 (SELECT COALESCE(SUM(fp2.amount_paid),0) FROM fee_payments fp2 WHERE fp2.student_id=s.student_id AND fp2.amount_paid>0) AS student_paid
           FROM fee_payments p
           JOIN students s ON p.student_id = s.student_id
           JOIN fee_structure fs ON p.fee_structure_id = fs.fee_structure_id
@@ -230,12 +232,13 @@ $dashboardLink = '../' . user()['home'];
                             <th>Allocation Type</th>
                             <th>Channel Pathway</th>
                             <th>Amount Paid</th>
+                            <th>Course Balance</th>
                             <th>Handled By</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if (empty($payments)): ?>
-                            <tr><td colspan="8" style="text-align: center; color: #a0aec0; padding: 30px;">No operational payment entries found in database ledgers.</td></tr>
+                            <tr><td colspan="9" style="text-align: center; color: #a0aec0; padding: 30px;">No operational payment entries found in database ledgers.</td></tr>
                         <?php else: ?>
                             <?php foreach($payments as $p): ?>
                                 <tr>
@@ -249,6 +252,7 @@ $dashboardLink = '../' . user()['home'];
                                     <td><small class="badge" style="background:#ebf8ff; color:#2b6cb0; text-transform:none; font-weight:600;"><?= htmlspecialchars($p['course_code']) ?> - <?= str_replace('_', ' ', ucfirst($p['fee_type'])) ?></small></td>
                                     <td><span class="badge badge-<?= htmlspecialchars($p['payment_method']) ?>"><?= htmlspecialchars(ucfirst($p['payment_method'])) ?></span></td>
                                     <td><?= money($p['amount_paid']) ?></td>
+                                    <td><?=money(max(0,(float)$p['student_billed']-(float)$p['student_paid']))?></td>
                                     <td><?= htmlspecialchars($p['clerk_name']) ?></td>
                                 </tr>
                             <?php endforeach; ?>
