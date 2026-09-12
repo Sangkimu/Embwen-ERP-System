@@ -18,7 +18,7 @@ $pending_admissions = $pdo->query("
     FROM admissions a 
     LEFT JOIN courses c ON c.course_id = a.course_id 
     WHERE a.admission_status = 'pending' 
-    ORDER BY a.created_at DESC LIMIT 5
+    ORDER BY a.application_date DESC, a.admission_id DESC LIMIT 5
 ")->fetchAll();
 
 // 3. Fetch Active Student Support/Welfare tickets
@@ -27,7 +27,7 @@ $active_welfare = $pdo->query("
     FROM student_welfare w 
     JOIN students s ON s.student_id = w.student_id 
     WHERE w.status = 'open' 
-    ORDER BY w.created_at DESC LIMIT 5
+    ORDER BY w.record_date DESC, w.welfare_id DESC LIMIT 5
 ")->fetchAll();
 
 // 4. NEW: Fetch Recent Hostel Accommodations Room Assignments 
@@ -77,7 +77,7 @@ $services=moduleServices('dean',user()['role']);
                         <tr>
                             <td><b><?=htmlspecialchars($adm['applicant_name'] ?? 'Unknown')?></b></td>
                             <td><?=htmlspecialchars($adm['course_name'] ?? 'Unassigned Module')?></td>
-                            <td><a href="admissions/view.php?id=<?=$adm['admission_id']?>" class="badge-neutral" style="text-decoration:none;">Review</a></td>
+                            <td><a href="admissions.php?status=pending" class="badge-neutral" style="text-decoration:none;">Review</a></td>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>

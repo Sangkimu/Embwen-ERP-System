@@ -162,7 +162,7 @@ function moduleServices($module, $role=null){
     'courses'=>['label'=>'Courses','path'=>'../admin/courses.php','description'=>'Review course and department assignments.'],
     'departments'=>['label'=>'Departments','path'=>'../admin/departments.php','description'=>'Review academic departments.'],
    'admissions'=>['label'=>'Admissions','path'=>'admissions.php','description'=>'Review applications and decisions.'],
-   'classes'=>['label'=>'Class Allocation','path'=>'classes.php','description'=>'Assign students to classes.'],
+  'accommodation'=>['label'=>'Boarding Management','path'=>'accommodation.php','description'=>'Allocate and release hostel rooms.'],
     'welfare'=>['label'=>'Student Welfare','path'=>'welfare.php','description'=>'Manage student welfare cases.'],
     'students'=>['label'=>'Students','path'=>'../students.php','description'=>'Manage enrolled student records.']
   ],
@@ -175,7 +175,7 @@ function moduleServices($module, $role=null){
  $access=[
   'admin'=>['super_admin'=>['users','courses','departments','notices','finance'],'admin'=>['users','courses','departments','notices','finance'],'staff'=>['courses','departments','notices','finance']],
   'finance'=>['finance_manager'=>['payments','fees','expenses','reports'],'finance_officer'=>['payments','fees','reports'],'cashier'=>['payments']],
-    'dean'=>['dean'=>['courses','departments','admissions','classes','welfare','students'],'admissions_officer'=>['courses','departments','admissions'],'welfare_officer'=>['courses','departments','welfare'],'registrar'=>['courses','departments','admissions','classes','students']],
+    'dean'=>['dean'=>['courses','departments','admissions','accommodation','welfare','students'],'admissions_officer'=>['courses','departments','admissions'],'welfare_officer'=>['courses','departments','welfare'],'registrar'=>['courses','departments','admissions','accommodation','students']],
   'students'=>['student'=>['profile','fees','notices']]
  ];
  $keys=$access[$module][$role] ?? [];

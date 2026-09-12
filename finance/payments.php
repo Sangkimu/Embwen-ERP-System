@@ -44,6 +44,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST['action'] ?? '') === 'initi
 // --- 1. CORE PAYMENT RECEIPT POSTING ENGINE ---
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['action'] === 'record_payment') {
     $studentId     = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
+    $feeType       = trim($_POST['fee_type_filter'] ?? '');
     $structureId   = filter_input(INPUT_POST, 'fee_structure_id', FILTER_VALIDATE_INT);
     $amountPaid    = filter_input(INPUT_POST, 'amount_paid', FILTER_VALIDATE_FLOAT);
     $paymentMethod = $_POST['payment_method'] ?? '';
@@ -52,7 +53,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
 
     $validMethods = ['bank','online','equity_bank'];
 
-    if ($studentId && $structureId && $amountPaid > 0 && !empty($receiptNo) && in_array($paymentMethod, $validMethods, true)) {
+    if (!$structureId && $studentId && in_array($feeType, ['tuition','exam'], true)) {
+        $structureStmt = $pdo->prepare("SELECT fs.fee_structure_id FROM fee_structure fs WHERE fs.course_id=(SELECT course_id FROM students WHERE student_id=?) AND fs.fee_type=? ORDER BY fs.academic_year DESC, fs.semester DESC LIMIT 1");
+        $structureStmt->execute([$studentId, $feeType]);
+        $structureId = (int)($structureStmt->fetchColumn() ?: 0);
+    }
+
+    if ($studentId && $structureId && $amountPaid > 0 && !empty($receiptNo) && in_array($paymentMethod, $validMethods, true) && in_array($feeType, ['tuition','exam'], true)) {
         try {
             $pdo->beginTransaction();
 
@@ -88,7 +95,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             $messageClass = "alert-danger";
         }
     } else {
-        $message = "Validation processing failed. Ensure all numerical data and selections are formatted properly.";
+        $message = "Validation processing failed. Select a student, choose Fee or Exam, and enter a valid receipt and amount.";
         $messageClass = "alert-danger";
     }
 }
@@ -216,7 +223,7 @@ $dashboardLink = '../' . user()['home'];
             </div>
 
             <?php if (!empty($failedMpesaTxns)): ?>
-                <div class="alert alert-danger">
+                <div class="alert alert-danger" id="stkStatusNotice">
                     <strong>STK status notice:</strong> <?= count($failedMpesaTxns) ?> payment request(s) were cancelled or timed out and are visible below as failed M-Pesa attempts.
                 </div>
             <?php endif; ?>
@@ -229,37 +236,6 @@ $dashboardLink = '../' . user()['home'];
                 <div><label for="academic_year">Academic year</label><select id="academic_year" name="academic_year"><option value="">All years</option><?php foreach($years as $year):?><option value="<?=htmlspecialchars($year)?>" <?= $academicYear===$year?'selected':''?>><?=htmlspecialchars($year)?></option><?php endforeach;?></select></div>
                 <div><button class="filter-button" type="submit">Search</button><a class="clear-link" href="payments.php">Clear</a></div>
             </form>
-
-            <?php if (!empty($failedMpesaTxns)): ?>
-                <div style="margin: 0 0 18px; overflow-x: auto;">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>STK Status</th>
-                                <th>Student</th>
-                                <th>Course</th>
-                                <th>Amount</th>
-                                <th>Phone</th>
-                                <th>Reason</th>
-                                <th>Updated</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($failedMpesaTxns as $failed): ?>
-                                <tr>
-                                    <td><span class="badge badge-mpesa" style="background:#fed7d7;color:#742a2a;">Failed</span></td>
-                                    <td><?= htmlspecialchars($failed['student_name']) ?></td>
-                                    <td><?= htmlspecialchars($failed['course_code'].' - '.$failed['fee_type']) ?></td>
-                                    <td><?= money($failed['amount']) ?></td>
-                                    <td><?= htmlspecialchars($failed['phone_number']) ?></td>
-                                    <td><?= htmlspecialchars($failed['result_description'] ?: 'Cancelled or timed out by user') ?></td>
-                                    <td><?= htmlspecialchars(date('d-M-Y H:i', strtotime($failed['updated_at']))) ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
 
             <div style="overflow-x: auto;">
                 <table class="data-table">
@@ -309,8 +285,11 @@ $dashboardLink = '../' . user()['home'];
         <h2>Record Payment</h2>
         <form method="post">
             <input type="hidden" name="action" id="paymentAction" value="record_payment">
-            <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>" data-course="<?= (int)($student['course_id'] ?? 0) ?>" data-residency="<?=htmlspecialchars($student['residency']??'')?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name'].' ('.($student['course_code'] ?? 'Unassigned').' / '.($student['residency'] ?? 'Classification pending').')') ?></option><?php endforeach; ?></select><small class="field-hint">Fee items are limited to this student's course and fee classification.</small></div>
-            <div class="form-group"><label for="fee_structure_id">Fee structure</label><select class="form-control" id="fee_structure_id" name="fee_structure_id" required><option value="">Select fee item</option><?php foreach($feeStructures as $fee): ?><option value="<?= (int)$fee['fee_structure_id'] ?>" data-course="<?= (int)$fee['course_id'] ?>" data-residency="<?=htmlspecialchars($fee['residency_scope'])?>" data-amount="<?= htmlspecialchars((string)$fee['amount'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($fee['course_code'].' - Term '.$fee['semester'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')') ?></option><?php endforeach; ?></select><small class="field-hint" id="feeHint">Select a student first, then choose a fee item for that student's course.</small></div>
+            <div class="form-group"><label for="admission_search">Search student by Admission No.</label><input class="form-control" id="admission_search" type="text" placeholder="Enter admission number or name" autocomplete="off"></div>
+            <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>" data-course="<?= (int)($student['course_id'] ?? 0) ?>" data-residency="<?=htmlspecialchars($student['residency']??'')?>" data-search="<?=htmlspecialchars(strtolower($student['id_no'].' '.$student['name']))?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name'].' ('.($student['course_code'] ?? 'Unassigned').' / '.($student['residency'] ?? 'Classification pending').')') ?></option><?php endforeach; ?></select><small class="field-hint">Use the admission number to narrow the list quickly.</small></div>
+            <div class="form-group"><label for="fee_type_filter">Payment type</label><select class="form-control" id="fee_type_filter" name="fee_type_filter" required><option value="">Select fee type</option><option value="tuition">Tuition fee</option><option value="exam">Exam fee</option></select></div>
+            <input type="hidden" id="fee_structure_id" name="fee_structure_id">
+            <div class="form-group"><label>Selected fee item</label><div id="feeHint" class="field-hint" style="margin-top:0; padding:10px 12px; border:1px solid #dbeafe; border-radius:6px; background:#f8fbff; color:#1e3d73;">Choose a student and fee type to load the matching fee record automatically.</div></div>
             <div class="form-row"><div class="form-group"><label for="amount_paid">Amount paid (KES)</label><input class="form-control" id="amount_paid" name="amount_paid" type="number" min="0.01" step="0.01" inputmode="decimal" autocomplete="off" required><small class="field-hint">Partial payments are allowed. Cash payments are not accepted.</small></div><div class="form-group"><label for="payment_method">Payment method</label><select class="form-control" id="payment_method" name="payment_method" required><option value="">Select method</option><option value="bank">Bank transfer</option><option value="equity_bank">Equity Bank</option><option value="online">Online</option><option value="mpesa">M-Pesa STK Push</option></select></div></div>
             <div id="mpesaContainer" style="display:none; border:1px solid #dbeafe; background:#f8fbff; border-radius:8px; padding:16px; margin-bottom:18px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
@@ -338,22 +317,84 @@ const receiptGroup=document.getElementById('receiptGroup');
 const receipt=document.getElementById('receipt_no');
 const submit=document.getElementById('submitPayment');
 const student=document.getElementById('student_id');
+const feeType=document.getElementById('fee_type_filter');
+const admissionSearch=document.getElementById('admission_search');
+
+const stkStatusNotice=document.getElementById('stkStatusNotice');
+if (stkStatusNotice) {
+ setTimeout(function(){
+  stkStatusNotice.style.transition='opacity 0.4s ease';
+  stkStatusNotice.style.opacity='0';
+  setTimeout(function(){stkStatusNotice.remove();},400);
+ },5000);
+}
+
+function filterFeeStructureList(){
+ const courseId=student.options[student.selectedIndex]?.dataset.course || '';
+ const residency=student.options[student.selectedIndex]?.dataset.residency || '';
+ const selectedType=feeType.value || '';
+ if (!courseId || !selectedType) {
+     feeStructure.value = '';
+     amount.value = '';
+     feeHint.textContent = 'Choose a student and fee type to load the matching fee record automatically.';
+     return;
+ }
+
+ const matchedFee = window.allFeeStructures.find(function(item){
+     return String(item.course_id) === String(courseId)
+          && String(item.fee_type) === String(selectedType)
+          && (String(item.residency_scope) === 'universal' || String(item.residency_scope) === String(residency));
+ });
+
+ if (matchedFee) {
+     feeStructure.value = String(matchedFee.fee_structure_id);
+     feeHint.textContent = 'Selected fee item: ' + matchedFee.label + ' — KES ' + Number(matchedFee.amount).toLocaleString('en-KE', { minimumFractionDigits: 2 });
+     if (!amount.value) amount.value = matchedFee.amount;
+ } else {
+     feeStructure.value = '';
+     amount.value = '';
+     feeHint.textContent = 'No matching fee record for this student and payment type.';
+ }
+}
+
+admissionSearch.addEventListener('input', function(){
+ const query = this.value.trim().toLowerCase();
+ Array.from(student.options).forEach(function(option){
+    if (!option.value) { option.hidden = false; return; }
+    const match = !query || (option.dataset.search || '').includes(query);
+    option.hidden = !match;
+ });
+ if (!query) {
+    student.value = '';
+    feeStructure.value = '';
+ }
+});
+
 student.addEventListener('change',function(){
  const courseId=this.options[this.selectedIndex].dataset.course||'';
  const residency=this.options[this.selectedIndex].dataset.residency||'';
- Array.from(feeStructure.options).forEach(function(option){
-    option.hidden=option.value!==''&&(option.dataset.course!==courseId||(option.dataset.residency!=='universal'&&option.dataset.residency!==residency));
- });
  feeStructure.value='';
  amount.value='';
- feeHint.textContent=courseId?'Only fee items for the selected student course are shown.':'Select a student first.';
+ if (courseId && feeType.value) {
+     filterFeeStructureList();
+ } else {
+     feeHint.textContent = courseId ? 'Choose the payment type for this student.' : 'Select a student first.';
+ }
 });
-feeStructure.addEventListener('change',function(){
- const selected=this.options[this.selectedIndex];
- const configuredAmount=selected.dataset.amount||'';
- feeHint.textContent=configuredAmount?'Configured fee: KES '+Number(configuredAmount).toLocaleString('en-KE',{minimumFractionDigits:2}):'Select a fee item to see its configured amount.';
- if(configuredAmount&&!amount.value) amount.value=configuredAmount;
+
+feeType.addEventListener('change', function(){
+ filterFeeStructureList();
 });
+
+window.allFeeStructures = <?php echo json_encode(array_map(function($fee){ return [
+     'fee_structure_id' => (int)$fee['fee_structure_id'],
+     'course_id' => (int)$fee['course_id'],
+     'fee_type' => $fee['fee_type'],
+     'residency_scope' => $fee['residency_scope'],
+     'amount' => (float)$fee['amount'],
+     'label' => $fee['course_code'].' - Term '.$fee['semester'].' - '.ucfirst($fee['fee_type']).' - KES '.number_format($fee['amount'],2).' ('.$fee['academic_year'].')'
+]; }, $feeStructures)); ?>;
+
 method.addEventListener('change',function(){
  const mpesa=this.value==='mpesa';
  action.value=mpesa?'initiate_mpesa':'record_payment';

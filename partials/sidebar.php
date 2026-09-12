@@ -44,9 +44,10 @@ function isNavActive($pageName, $currentPage) {
             <!-- ================= ROLE MODULE 2: DEAN OF STUDENTS ================= -->
             <?php elseif ($userRole === 'dean'): ?>
                 <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard Home</a></li>
-                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Welfare & Intake</li>
+                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Admissions & Registry</li>
                 <li class="nav-item"><a href="admissions.php" <?= isNavActive('admissions.php', $currentPage) ?>><span class="nav-icon">📝</span> Admissions Approval</a></li>
-                <li class="nav-item"><a href="allocations.php" <?= isNavActive('allocations.php', $currentPage) ?>><span class="nav-icon">🏫</span> Class Allocations</a></li>
+                <li class="nav-item"><a href="../students.php" <?= isNavActive('students.php', $currentPage) ?>><span class="nav-icon">👥</span> Student Registry</a></li>
+                <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Boarding & Welfare</li>
                 <li class="nav-item"><a href="accommodation.php" <?= isNavActive('accommodation.php', $currentPage) ?>><span class="nav-icon">🏢</span> Hostels & Accom.</a></li>
                 <li class="nav-item"><a href="welfare.php" <?= isNavActive('welfare.php', $currentPage) ?>><span class="nav-icon">🛡️</span> Student Welfare</a></li>
 

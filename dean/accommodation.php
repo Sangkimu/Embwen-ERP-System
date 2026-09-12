@@ -12,20 +12,37 @@ $studentSearch = trim($_GET['student_search'] ?? '');
 
 // Handle allocation request submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action      = $_POST['action'] ?? 'allocate';
+    $allocationId = filter_input(INPUT_POST, 'allocation_id', FILTER_VALIDATE_INT);
     $student_id  = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
     $hostel_name = trim($_POST['hostel_name'] ?? '');
     $room_no     = trim($_POST['room_no'] ?? '');
 
-    if (!empty($student_id) && !empty($hostel_name) && !empty($room_no)) {
+    if ($action === 'release' && $allocationId) {
+        $release = $pdo->prepare("UPDATE hostel_allocations SET status='released', released_at=NOW() WHERE allocation_id=? AND status='allocated'");
+        $release->execute([$allocationId]);
+        $message = $release->rowCount() ? "<div class='alert-success'>Room allocation released successfully.</div>" : "<div class='alert-danger'>This allocation is already released or does not exist.</div>";
+    } elseif (!empty($student_id) && !empty($hostel_name) && !empty($room_no)) {
         try {
             // Verify if student exists first
             $check_student = $pdo->prepare("SELECT COUNT(*) FROM students WHERE student_id = ?");
             $check_student->execute([$student_id]);
             
             if ($check_student->fetchColumn() > 0) {
+                $active = $pdo->prepare("SELECT COUNT(*) FROM hostel_allocations WHERE student_id=? AND status='allocated'");
+                $active->execute([$student_id]);
+                if ($active->fetchColumn() > 0) {
+                    throw new Exception('This student already has an active boarding allocation. Release it before assigning another room.');
+                }
+                $room = $pdo->prepare("SELECT COUNT(*) FROM hostel_allocations WHERE hostel_name=? AND room_no=? AND status='allocated'");
+                $room->execute([$hostel_name, $room_no]);
+                if ($room->fetchColumn() > 0) {
+                    throw new Exception('That room is already allocated.');
+                }
                 // Insert the room allocation into the system
                 $stmt = $pdo->prepare("INSERT INTO hostel_allocations (student_id, hostel_name, room_no, status) VALUES (?, ?, ?, 'allocated')");
                 $stmt->execute([$student_id, $hostel_name, $room_no]);
+                $pdo->prepare("UPDATE students SET residency='boarder' WHERE student_id=?")->execute([$student_id]);
                 
                 $message = "<div class='alert-success'>✅ Room assigned successfully for Student ID: " . htmlspecialchars($student_id) . "</div>";
             } else {
@@ -127,6 +144,7 @@ $allocations = $pdo->query("SELECT ha.*, s.name AS student_name, s.id_no, c.cour
                                 <th>Hostel Block</th>
                                 <th>Assigned Room</th>
                                 <th>Allocation Date</th>
+                                <th>Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -138,6 +156,7 @@ $allocations = $pdo->query("SELECT ha.*, s.name AS student_name, s.id_no, c.cour
                                     <td><?= htmlspecialchars($row['hostel_name']) ?></td>
                                     <td><span style="font-weight:600; color:#1e3a8a;"><?= htmlspecialchars($row['room_no']) ?></span></td>
                                     <td><?= date('d-M-Y', strtotime($row['allocated_at'])) ?></td>
+                                    <td><form method="post" onsubmit="return confirm('Release this room allocation?');"><input type="hidden" name="action" value="release"><input type="hidden" name="allocation_id" value="<?= (int)$row['allocation_id'] ?>"><button type="submit" class="btn-assign" style="background:#b91c1c;padding:7px 10px;">Release</button></form></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
