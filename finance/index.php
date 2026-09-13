@@ -3,7 +3,7 @@ require_once "../config.php";
 requireLogin();
 
 // Prevent unauthorized entry outside the designated financial boundaries
-if(!allowed(['finance', 'admin'])){ http_response_code(403); die("Access denied."); }
+if(!allowed(['finance'])){ http_response_code(403); die("Access denied."); }
 
 // Fetch the current logged-in user profile attributes safely from session contexts
 $userRole = user()['role'] ?? 'staff'; 

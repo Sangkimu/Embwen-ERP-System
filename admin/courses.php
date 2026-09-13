@@ -28,7 +28,7 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.dura
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         body { margin:0; font-family: Arial, sans-serif; background:#f4f7fb; }
-        .app { display:grid; grid-template-columns: 260px 1fr; min-height:100vh; }
+        .app { display:block; min-height:100vh; }
         .main { padding:30px; }
         .card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:20px; }
         table { width:100%; border-collapse:collapse; margin-top:20px; }
@@ -39,6 +39,7 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.dura
         .registry-form button { background:#1e3d73; color:#fff; border:0; border-radius:6px; padding:10px 16px; font-weight:700; }
         .registry-message { padding:10px 12px; background:#e6f4ea; color:#137333; border-radius:6px; margin-top:15px; }
         @media(max-width:800px){.registry-form{grid-template-columns:1fr;}}
+        @media(max-width:700px){.sidebar{position:static;width:100%;min-height:auto;transform:none}.main{margin-left:0;width:100%}.content{padding:20px}.topbar{padding:0 18px}}
 
         /* Filter layout formatting */
         .filter-container { margin: 20px 0 10px 0; display: flex; align-items: center; gap: 10px; }

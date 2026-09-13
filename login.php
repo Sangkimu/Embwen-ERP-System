@@ -13,16 +13,7 @@ if(isset($_SESSION['user'])){
 }
 $mode=$_GET['mode']??'login';
 $error=''; $success='';
-$adminRoles=['super_admin'=>'Super Administrator','admin'=>'Administrator','staff'=>'Staff'];
-$moduleRoles=[
- 'admin'=>$adminRoles,
- 'finance'=>['finance_manager'=>'Finance Manager','finance_officer'=>'Finance Officer','cashier'=>'Cashier'],
- 'dean'=>['dean'=>'Dean','admissions_officer'=>'Admissions Officer','welfare_officer'=>'Welfare Officer','registrar'=>'Registrar'],
- 'students'=>['student'=>'Student']
-];
-$availableAdminRoles=$adminRoles;
-$roleQuery=$pdo->query("SELECT role FROM module_users WHERE module='admin'");
-foreach($roleQuery as $registeredRole){ unset($availableAdminRoles[$registeredRole['role']]); }
+$moduleRoles=['students'=>['student'=>'Student']];
 
 if($_SERVER['REQUEST_METHOD']==='POST'){
  $mode=$_POST['mode']??'login';
@@ -31,19 +22,14 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
  if($mode==='register'){
   $name=trim($_POST['full_name']??'');
   $email=trim($_POST['email']??'');
-  $module=$_POST['module']??'';
-  $role=$_POST['role']??'';
-    if($name===''||$username===''||strlen($password)<8||!isset($homes[$module])||!isset($moduleRoles[$module][$role])||($module==='admin'&&!isset($availableAdminRoles[$role]))){
+  $module='students';
+  $role='student';
+    if($name===''||$username===''||strlen($password)<8){
    $error='Complete all fields. Passwords must contain at least 8 characters.';
   } else {
    $check=$pdo->prepare('SELECT user_id FROM module_users WHERE username=? LIMIT 1');
    $check->execute([$username]);
    if($check->fetch()) $error='That username is already in use.';
-   elseif($module==='admin'){
-    $check=$pdo->prepare("SELECT user_id FROM module_users WHERE module='admin' AND role=? LIMIT 1");
-    $check->execute([$role]);
-    if($check->fetch()) $error='That admin role has already been registered. Please sign in instead.';
-   }
    if($error===''){
     try{
      $stmt=$pdo->prepare('INSERT INTO module_users (username,password_hash,full_name,module,role,email) VALUES (?,?,?,?,?,?)');
@@ -96,8 +82,8 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 <?php endif;?>
 <?php if($error):?><div class="alert danger"><?=htmlspecialchars($error)?></div><?php endif;?><?php if($success):?><div class="alert success"><?=htmlspecialchars($success)?></div><?php endif;?>
 <?php if($mode==='register'):?>
-<form method="post"><input type="hidden" name="mode" value="register"><label>Account type<select name="module" id="module" onchange="toggleRegistrationFields()" required><option value="">Choose account type</option><?php foreach($moduleRoles as $moduleValue=>$roles):?><?php if($moduleValue!=='admin'||$availableAdminRoles):?><option value="<?=htmlspecialchars($moduleValue)?>"><?=htmlspecialchars($moduleValue==='students'?'Student':ucfirst($moduleValue))?></option><?php endif;?><?php endforeach;?></select></label><label>Full name<input name="full_name" required autocomplete="name"></label><label>Username<input name="username" required autocomplete="username"></label><label>Email <span class="muted">(optional)</span><input type="email" name="email" autocomplete="email"></label><label id="registration-role">Role<select name="role" id="role" required><option value="">Choose role</option><?php foreach($moduleRoles as $moduleValue=>$roles): foreach($roles as $value=>$label): if($moduleValue!=='admin'||isset($availableAdminRoles[$value])):?><option data-module="<?=htmlspecialchars($moduleValue)?>" value="<?=htmlspecialchars($value)?>"><?=htmlspecialchars($label)?></option><?php endif; endforeach; endforeach;?></select></label><label>Password<input type="password" name="password" required minlength="8" autocomplete="new-password"></label><button class="primary full">Create account</button></form><div class="login-note">Admin roles can be registered once. Finance, Dean and Student accounts use their selected role.</div><p class="auth-switch">Already registered? <a href="index.php">Sign in</a></p>
+<form method="post"><input type="hidden" name="mode" value="register"><label>Full name<input name="full_name" required autocomplete="name"></label><label>Username<input name="username" required autocomplete="username"></label><label>Email <span class="muted">(optional)</span><input type="email" name="email" autocomplete="email"></label><label>Password<input type="password" name="password" required minlength="8" autocomplete="new-password"></label><button class="primary full">Create student account</button></form><div class="login-note">Only student accounts can be created here. Admin, Finance and Dean accounts are created by the Super Admin.</div><p class="auth-switch">Already registered? <a href="index.php">Sign in</a></p>
 <?php else:?>
 <form method="post"><input type="hidden" name="mode" value="login"><label>Username<input name="username" required autocomplete="username"></label><label>Password<input type="password" name="password" required autocomplete="current-password"></label><button class="primary full">Sign in securely</button></form><div class="login-note">Your account automatically opens its assigned dashboard.</div><p class="auth-switch">First time here? <a href="index.php?mode=register">Create an account</a></p>
 <?php endif;?>
-</section></div><script>function toggleRegistrationFields(){var module=document.getElementById('module');var role=document.getElementById('role');if(!module||!role){return;}Array.from(role.options).forEach(function(option){option.hidden=option.value!==''&&option.dataset.module!==module.value;});role.value='';}toggleRegistrationFields();</script></body></html>
+</section></div></body></html>

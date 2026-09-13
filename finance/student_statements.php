@@ -1,7 +1,7 @@
 <?php
 require_once "../config.php";
 requireLogin();
-if(!allowed(['finance','admin'])){http_response_code(403);die("Access denied.");}
+if(!allowed(['finance'])){http_response_code(403);die("Access denied.");}
 $search=trim($_GET['search']??'');
 $studentProfile=null;
 $statementLogs=[];

@@ -57,13 +57,12 @@ function isNavActive($pageName, $currentPage) {
             <?php elseif ($userModule === 'admin'): ?>
                 <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard Home</a></li>
                 <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Institution Setup</li>
-                <li class="nav-item"><a href="staff.php" <?= isNavActive('staff.php', $currentPage) ?>><span class="nav-icon">👥</span> Staff & Users</a></li>
+                <?php if ($userRole === 'super_admin'): ?><li class="nav-item"><a href="staff.php" <?= isNavActive('staff.php', $currentPage) ?>><span class="nav-icon">👥</span> Staff & Users</a></li><?php endif; ?>
                 <li class="nav-item"><a href="courses.php" <?= isNavActive('courses.php', $currentPage) ?>><span class="nav-icon">📚</span> Courses</a></li>
                 <li class="nav-item"><a href="departments.php" <?= isNavActive('departments.php', $currentPage) ?>><span class="nav-icon">🏛️</span> Departments</a></li>
                 <li class="nav-item"><a href="notices.php" <?= isNavActive('notices.php', $currentPage) ?>><span class="nav-icon">📣</span> Notices & Content</a></li>
                 <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Registry & Operations</li>
                 <li class="nav-item"><a href="../students.php" <?= isNavActive('students.php', $currentPage) ?>><span class="nav-icon">🎓</span> Student Registry</a></li>
-                <li class="nav-item"><a href="../finance/index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">💰</span> Finance Workspace</a></li>
 
             <!-- ================= ROLE MODULE 4: LECTURERS / FACULTY ================= -->
             <?php elseif ($userRole === 'lecturers'): ?>

@@ -3,7 +3,7 @@ require_once "../config.php";
 requireLogin();
 
 // Prevent non-privileged roles from cracking the directory root
-if(!allowed(['admin', 'finance'])){ http_response_code(403); die("Access denied."); }
+if(!allowed(['admin'])){ http_response_code(403); die("Access denied."); }
 
 $userRole = user()['role'] ?? 'staff';
 
@@ -119,6 +119,7 @@ if ($userRole === 'super_admin' || $userRole === 'admin') {
                             <a href="notices.php" style="padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; color:#2d3748; text-decoration:none; font-weight:600; text-align:center;">📣 Post Notice Bulletin</a>
                         </div>
                     </div>
+
                 </div>
 
                 <!-- Right Bulletins Timeline Sidebar -->

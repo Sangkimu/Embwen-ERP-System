@@ -1,7 +1,7 @@
 <?php
 require_once "../config.php";
 requireLogin();
-if(!allowed(['finance','admin'])){http_response_code(403);die("Access denied.");}
+if(!allowed(['finance'])){http_response_code(403);die("Access denied.");}
 $dashboardLink='../'.user()['home'];
 $channelSummary=$pdo->query("SELECT payment_method,COUNT(*) AS tx_count,COALESCE(SUM(amount_paid),0) AS total_amount FROM fee_payments GROUP BY payment_method ORDER BY total_amount DESC")->fetchAll();
 $expenseSummary=$pdo->query("SELECT category,COUNT(*) AS voucher_count,COALESCE(SUM(amount),0) AS total_spent FROM expenses GROUP BY category ORDER BY total_spent DESC")->fetchAll();

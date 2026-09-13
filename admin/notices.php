@@ -60,7 +60,7 @@ $notices = $pdo->query("SELECT n.notice_id, n.title, n.content, n.posted_on, u.f
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>
         body { margin:0; font-family: Arial, sans-serif; background:#f4f7fb; }
-        .app { display:grid; grid-template-columns: 260px 1fr; min-height:100vh; }
+        .app { display:block; min-height:100vh; }
         .main { padding:30px; }
         .card { background:#fff; border:1px solid #e5e7eb; border-radius:10px; padding:20px; }
         .notice { border:1px solid #e2e8f0; border-left:4px solid #2563eb; padding:16px; border-radius:8px; margin-top:16px; }
@@ -70,6 +70,7 @@ $notices = $pdo->query("SELECT n.notice_id, n.title, n.content, n.posted_on, u.f
         .publish-button, .delete-button { border:0; border-radius:6px; padding:9px 14px; font-weight:700; cursor:pointer; }
         .publish-button { background:#1e3d73; color:#fff; }
         .delete-button { margin-top:10px; background:#fee2e2; color:#b91c1c; }
+        @media(max-width:700px){.sidebar{position:static;width:100%;min-height:auto;transform:none}.main{margin-left:0;width:100%}.content{padding:20px}.topbar{padding:0 18px}}
     </style>
 </head>
 <body>
