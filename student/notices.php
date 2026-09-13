@@ -18,7 +18,7 @@ if ($student) {
 
 $notices = count($notices_list);
 ?>
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notices & Announcements</title><link rel="stylesheet" href="../assets/css/style.css">
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/gif" href="<?=htmlspecialchars(appAssetPath('Images/logo.gif'))?>"><title>Notices & Announcements</title><link rel="stylesheet" href="../assets/css/style.css">
 <style>
     .notice-item { border-left: 3px solid #1e3a8a; padding: 15px; margin-bottom: 20px; background: rgba(0,0,0,0.01); border-radius: 0 4px 4px 0; }
     .notice-meta { display: flex; justify-content: space-between; font-size: 0.8rem; color: #64748b; margin-bottom: 8px; font-weight: 500; }

@@ -33,7 +33,7 @@ if($student && tableExists($pdo,'semesters')) {
 }
 // --- END POLYTECHNIC CORE LOGIC ---
 ?>
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Student Portal</title><link rel="stylesheet" href="../assets/css/style.css">
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/gif" href="<?=htmlspecialchars(appAssetPath('Images/logo.gif'))?>"><title>Student Portal</title><link rel="stylesheet" href="../assets/css/style.css">
 <style>
     /* Styling constraints configured cleanly to ride on top of your master css sheet rules */
     .poly-table { width: 100%; border-collapse: collapse; margin-top: 15px; }

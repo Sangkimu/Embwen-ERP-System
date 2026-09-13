@@ -42,7 +42,7 @@ if($student) {
 
 $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('all','students')")->fetchColumn();
 ?>
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Fees Statement</title><link rel="stylesheet" href="../assets/css/style.css">
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/gif" href="<?=htmlspecialchars(appAssetPath('Images/logo.gif'))?>"><title>My Fees Statement</title><link rel="stylesheet" href="../assets/css/style.css">
 <style>
     .fee-table { width: 100%; border-collapse: collapse; margin-top: 15px; }
     .fee-table th, .fee-table td { text-align: left; padding: 12px; border-bottom: 1px solid rgba(0,0,0,0.06); font-size: 0.88rem; }

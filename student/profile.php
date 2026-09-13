@@ -9,7 +9,7 @@ requireCompleteStudentProfile($student);
 
 $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('all','students')")->fetchColumn();
 ?>
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Profile</title><link rel="stylesheet" href="../assets/css/style.css">
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><link rel="icon" type="image/gif" href="<?=htmlspecialchars(appAssetPath('Images/logo.gif'))?>"><title>My Profile</title><link rel="stylesheet" href="../assets/css/style.css">
 <style>
     .profile-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; margin-top: 15px; }
     @media(max-width: 768px){ .profile-grid { grid-template-columns: 1fr; } }
