@@ -195,7 +195,7 @@ function mpesaStkPush($amount,$phone,$accountReference,$description){
 function moduleServices($module, $role=null){
  $catalog=[
   'admin'=>[
-   'users'=>['label'=>'Users','path'=>'users.php','description'=>'Manage user accounts and access.'],
+  'users'=>['label'=>'Users','path'=>'staff.php','description'=>'Manage user accounts and access.'],
    'courses'=>['label'=>'Courses','path'=>'courses.php','description'=>'Maintain the academic catalogue.'],
    'departments'=>['label'=>'Departments','path'=>'departments.php','description'=>'Maintain college departments.'],
   'notices'=>['label'=>'Notices','path'=>'notices.php','description'=>'Publish official announcements.'],
