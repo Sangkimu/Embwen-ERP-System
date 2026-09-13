@@ -1,10 +1,10 @@
 <?php
+require_once "config.php";
 if(!defined('ERP_ENTRY_POINT')){
  $mode=$_GET['mode']??'login';
  $redirect = 'index.php' . ($mode==='register' ? '?mode=register' : '');
  appRedirectPath($redirect);
 }
-require_once "config.php";
 $homes=['admin'=>'admin/index.php','finance'=>'finance/index.php','dean'=>'dean/index.php','students'=>'student/index.php'];
 if(isset($_SESSION['user'])){
  $home=$_SESSION['user']['home']??($homes[$_SESSION['user']['module']??'']??null);
