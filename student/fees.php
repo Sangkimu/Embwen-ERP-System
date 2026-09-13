@@ -51,6 +51,9 @@ $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('al
     .receipt-btn:hover { background: #334155; }
     .action-bar { display: flex; justify-content: space-between; align-items: center; margin-top: 25px; }
     .btn-pay-now { background: #22c55e; color: #fff; padding: 10px 20px; border-radius: 4px; font-weight: bold; text-decoration: none; font-size: 0.9rem; }
+    .pdf-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
+    .pdf-action { background:#1e3d73; color:#fff; border:0; border-radius:5px; padding:9px 12px; font-size:.78rem; font-weight:700; text-decoration:none; cursor:pointer; }
+    .pdf-action.light { background:#e2e8f0; color:#334155; }
     @media print { body * { visibility: hidden; } .printable-area, .printable-area * { visibility: visible; } .printable-area { position: absolute; left: 0; top: 0; width: 100%; } .receipt-btn, .action-bar, .sidebar, .topbar { display: none !important; } }
 </style>
 </head><body><div class="app"><aside class="sidebar"><?php include "../partials/sidebar.php";?></aside><main class="main"><header class="topbar"><div class="module-tag">Workspace / <b>My Fees</b></div><div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div></header><section class="content"><div class="page-head"><div><p class="eyebrow">FINANCIAL LEDGER</p><h1>Fee Statement & Receipts</h1><p>Review invoices and historical payments recorded for your student profile.</p></div></div>
@@ -112,7 +115,7 @@ $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('al
         <?php endif; ?>
 
         <div class="action-bar">
-                    <a class="receipt-btn" style="padding:10px 15px;" href="fee_schedule_pdf.php">Download 2026 Fee Structure PDF</a>
+                    <div class="pdf-actions"><a class="pdf-action" href="fee_schedule_pdf.php" target="_blank">View Generated Fee PDF</a><button class="pdf-action" type="button" onclick="printPdf('fee_schedule_pdf.php')">Print Fee Structure</button><a class="pdf-action light" href="fee_schedule_pdf.php" download>Download Fee Structure</a><a class="pdf-action" href="<?=htmlspecialchars(appAssetPath('Fee structure.pdf'))?>" target="_blank">View Official Fee PDF</a><a class="pdf-action light" href="<?=htmlspecialchars(appAssetPath('Payment Details.pdf'))?>" target="_blank">View Payment Details</a><a class="pdf-action light" href="<?=htmlspecialchars(appAssetPath('Payment Details.pdf'))?>" download>Download Payment Details</a></div>
             <button class="receipt-btn" style="padding:10px 15px;" onclick="window.print()">Print Complete Statement</button>
             <?php if($outstanding_balance > 0): ?>
                 <a href="payments/mpesa_trigger.php" class="btn-pay-now">Pay Balance via M-Pesa</a>
@@ -121,4 +124,4 @@ $notices=$pdo->query("SELECT COUNT(*) FROM notices WHERE target_audience IN ('al
     </section>
 </div>
 
-</section></main></div></body></html>
+</section></main></div><script>function printPdf(url){var pdf=window.open(url,'_blank');if(pdf){setTimeout(function(){pdf.print();},1000);}}</script></body></html>

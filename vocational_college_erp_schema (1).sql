@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS courses (
   course_name     VARCHAR(150) NOT NULL,
   department_id   INT UNSIGNED NOT NULL,
   duration_months SMALLINT UNSIGNED NOT NULL DEFAULT 12,
+  entry_requirement VARCHAR(150) NULL,
   status          ENUM('active','inactive') NOT NULL DEFAULT 'active',
   created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (course_id),

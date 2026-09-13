@@ -74,6 +74,9 @@ $moduleUsers = $pdo->query("SELECT username, full_name, id_type, id_number, phon
         .account-form { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; }
         .account-form input,.account-form select { width:100%; box-sizing:border-box; padding:10px; border:1px solid #cbd5e0; border-radius:6px; }
         .account-form button { background:#1e3d73; color:#fff; border:0; border-radius:6px; padding:10px 16px; font-weight:700; cursor:pointer; }
+        .password-field { position:relative; }
+        .password-field input { padding-right:40px; }
+        .password-toggle { position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:transparent; color:#64748b; cursor:pointer; padding:4px; }
         @media(max-width:800px){.account-form{grid-template-columns:1fr}}
         @media(max-width:700px){.sidebar{position:static;width:100%;min-height:auto;transform:none}.main{margin-left:0;width:100%}.content{padding:20px}.topbar{padding:0 18px}table{display:block;overflow-x:auto;white-space:nowrap}}
     </style>
@@ -98,7 +101,7 @@ $moduleUsers = $pdo->query("SELECT username, full_name, id_type, id_number, phon
                     <input name="staff_number" placeholder="Staff number" required>
                     <input name="username" placeholder="Username" required autocomplete="off">
                     <input name="email" type="email" placeholder="Email (optional)">
-                    <input name="password" type="password" minlength="8" placeholder="Temporary password" required>
+                    <div class="password-field"><input id="systemPassword" name="password" type="password" minlength="8" placeholder="Temporary password" required><button type="button" class="password-toggle" onclick="togglePassword('systemPassword', this)" aria-label="Show password" title="Show password">◉</button></div>
                     <select name="module" id="systemModule" required onchange="updateSystemRoles()"><option value="">Choose module</option><option value="admin">Admin</option><option value="finance">Finance</option><option value="dean">Dean</option></select>
                     <select name="role" id="systemRole" required><option value="">Choose role</option></select>
                     <button type="submit">Create Login</button>
@@ -135,6 +138,7 @@ $moduleUsers = $pdo->query("SELECT username, full_name, id_type, id_number, phon
 <?php if ($isSuperAdmin): ?><script>
 const systemRoles = <?=json_encode($moduleRoles, JSON_HEX_TAG|JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP)?>;
 function updateSystemRoles(){const module=document.getElementById('systemModule').value;const role=document.getElementById('systemRole');role.innerHTML='<option value="">Choose role</option>';Object.entries(systemRoles[module]||{}).forEach(([value,label])=>{const option=document.createElement('option');option.value=value;option.textContent=label;role.appendChild(option);});}
+function togglePassword(id, button){const input=document.getElementById(id);const visible=input.type==='text';input.type=visible?'password':'text';button.textContent=visible?'◉':'◎';button.setAttribute('aria-label',visible?'Show password':'Hide password');button.title=visible?'Show password':'Hide password';}
 </script><?php endif; ?>
 </body>
 </html>

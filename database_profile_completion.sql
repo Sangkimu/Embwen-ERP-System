@@ -1,5 +1,23 @@
 USE vocational_erp;
 
+SET @add_course_entry_requirement = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'courses' AND COLUMN_NAME = 'entry_requirement') = 0,
+  'ALTER TABLE courses ADD COLUMN entry_requirement VARCHAR(150) NULL AFTER duration_months',
+  'SELECT 1'
+);
+PREPARE stmt_course_entry_requirement FROM @add_course_entry_requirement;
+EXECUTE stmt_course_entry_requirement;
+DEALLOCATE PREPARE stmt_course_entry_requirement;
+
+SET @add_admission_residency = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'admissions' AND COLUMN_NAME = 'residency') = 0,
+  "ALTER TABLE admissions ADD COLUMN residency ENUM('boarder','dayscholar') NULL AFTER course_id",
+  'SELECT 1'
+);
+PREPARE stmt_admission_residency FROM @add_admission_residency;
+EXECUTE stmt_admission_residency;
+DEALLOCATE PREPARE stmt_admission_residency;
+
 SET @add_module_id_type = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'module_users' AND COLUMN_NAME = 'id_type') = 0,
   "ALTER TABLE module_users ADD COLUMN id_type ENUM('national_id','maisha_card') NULL AFTER full_name",
@@ -17,6 +35,24 @@ SET @add_student_identity_type = IF(
 PREPARE stmt_student_identity_type FROM @add_student_identity_type;
 EXECUTE stmt_student_identity_type;
 DEALLOCATE PREPARE stmt_student_identity_type;
+
+SET @add_study_start_date = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'study_start_date') = 0,
+  'ALTER TABLE students ADD COLUMN study_start_date DATE NULL AFTER course_id',
+  'SELECT 1'
+);
+PREPARE stmt_study_start_date FROM @add_study_start_date;
+EXECUTE stmt_study_start_date;
+DEALLOCATE PREPARE stmt_study_start_date;
+
+SET @add_expected_end_date = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'expected_end_date') = 0,
+  'ALTER TABLE students ADD COLUMN expected_end_date DATE NULL AFTER study_start_date',
+  'SELECT 1'
+);
+PREPARE stmt_expected_end_date FROM @add_expected_end_date;
+EXECUTE stmt_expected_end_date;
+DEALLOCATE PREPARE stmt_expected_end_date;
 
 SET @add_student_national_id = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'national_id') = 0,

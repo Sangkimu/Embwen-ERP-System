@@ -47,3 +47,7 @@ ON DUPLICATE KEY UPDATE
   department_id = VALUES(department_id),
   duration_months = VALUES(duration_months),
   status = 'active';
+
+UPDATE courses SET course_name='Upholstering & Roofing' WHERE course_code='BLD-URO';
+UPDATE courses SET entry_requirement='KCPE/KPSEA/KSSEA/KSCE'
+WHERE course_code IN ('BLD-CAR','BLD-MAS','BLD-PLU','BLD-PNT','BLD-TIL','BLD-WAH','BLD-URO','MEC-WEL','MEC-LVM','MEC-MVE','MEC-PLM','ICT-COP','ICT-CPK','ELE-EWI','ELE-BEW');

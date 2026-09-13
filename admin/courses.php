@@ -12,11 +12,12 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     $courseName=trim($_POST['course_name']??'');
     $departmentId=filter_input(INPUT_POST,'department_id',FILTER_VALIDATE_INT);
     $duration=filter_input(INPUT_POST,'duration_months',FILTER_VALIDATE_INT);
+    $entryRequirement=trim($_POST['entry_requirement']??'');
     if($courseCode===''||$courseName===''||!$departmentId||!$duration||$duration<1){$message='Enter a course code, name, department, and valid duration.';}
-    else{try{$stmt=$pdo->prepare('INSERT INTO courses (course_code,course_name,department_id,duration_months) VALUES (?,?,?,?)');$stmt->execute([$courseCode,$courseName,$departmentId,$duration]);$message='Course added successfully.';}catch(PDOException $e){$message='That course code already exists or could not be saved.';}}
+    else{try{$stmt=$pdo->prepare('INSERT INTO courses (course_code,course_name,department_id,duration_months,entry_requirement) VALUES (?,?,?,?,?)');$stmt->execute([$courseCode,$courseName,$departmentId,$duration,$entryRequirement!==''?$entryRequirement:null]);$message='Course added successfully.';}catch(PDOException $e){$message='That course code already exists or could not be saved.';}}
 }
 $departments=$pdo->query("SELECT department_id,department_name FROM departments ORDER BY department_name")->fetchAll();
-$courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.duration_months, d.department_name, c.status FROM courses c LEFT JOIN departments d ON d.department_id = c.department_id ORDER BY c.course_name")->fetchAll();
+$courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.duration_months, c.entry_requirement, d.department_name, c.status FROM courses c LEFT JOIN departments d ON d.department_id = c.department_id ORDER BY d.department_name, c.course_name")->fetchAll();
 ?>
 <!doctype html>
 <html lang="en">
@@ -36,6 +37,7 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.dura
         th { background:#f8fafc; }
         .registry-form { display:grid; grid-template-columns:1fr 1.5fr 1fr 1fr auto; gap:10px; margin-top:18px; }
         .registry-form input,.registry-form select { padding:10px; border:1px solid #cbd5e0; border-radius:6px; }
+        .period { white-space:nowrap; }
         .registry-form button { background:#1e3d73; color:#fff; border:0; border-radius:6px; padding:10px 16px; font-weight:700; }
         .registry-message { padding:10px 12px; background:#e6f4ea; color:#137333; border-radius:6px; margin-top:15px; }
         @media(max-width:800px){.registry-form{grid-template-columns:1fr;}}
@@ -57,7 +59,7 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.dura
             <h1>Courses</h1>
             <p class="text-muted">Academic courses available in the college registry.</p>
             <?php if($message): ?><div class="registry-message"><?=htmlspecialchars($message)?></div><?php endif; ?>
-            <form class="registry-form" method="post"><input name="course_code" placeholder="Course code" required><input name="course_name" placeholder="Course name" required><select name="department_id" required><option value="">Department</option><?php foreach($departments as $department):?><option value="<?= (int)$department['department_id']?>"><?=htmlspecialchars($department['department_name'])?></option><?php endforeach;?></select><input name="duration_months" type="number" min="1" placeholder="Months" required><button type="submit">Add course</button></form>
+            <form class="registry-form" method="post"><input name="course_code" placeholder="Course code" required><input name="course_name" placeholder="Course name" required><select name="department_id" required><option value="">Department</option><?php foreach($departments as $department):?><option value="<?= (int)$department['department_id']?>"><?=htmlspecialchars($department['department_name'])?></option><?php endforeach;?></select><input name="duration_months" type="number" min="1" placeholder="Months" required><input name="entry_requirement" placeholder="Entry requirement (optional)"><button type="submit">Add course</button></form>
             
             <!-- Dynamic Institutional Course Selector Dropdown List Component -->
             <div class="filter-container">
@@ -91,7 +93,7 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.dura
                         <option value="Painting & Decoration">Painting & Decoration</option>
                         <option value="Tiling">Tiling</option>
                         <option value="Water Harvesting">Water Harvesting</option>
-                        <option value="Upholstery & Roofing">Upholstery & Roofing</option>
+                        <option value="Upholstering & Roofing">Upholstering & Roofing</option>
                     </optgroup>
 
                     <optgroup label="Mechanical Engineering">
@@ -119,7 +121,8 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.dura
                         <th>Code</th>
                         <th>Course</th>
                         <th>Department</th>
-                        <th>Period</th>
+                        <th>Period of Study</th>
+                        <th>Entry Requirement</th>
                         <th>Status</th>
                     </tr>
                 </thead>
@@ -130,7 +133,8 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.dura
                             <td><?= htmlspecialchars($course['course_code']) ?></td>
                             <td><?= htmlspecialchars($course['course_name']) ?></td>
                             <td><?= htmlspecialchars($course['department_name'] ?? '-') ?></td>
-                            <td><?= (int)$course['duration_months'] ?> months</td>
+                            <td class="period"><?= (int)$course['duration_months'] % 12 === 0 ? ((int)$course['duration_months'] / 12).' year'.((int)$course['duration_months'] === 12 ? '' : 's') : (int)$course['duration_months'].' months' ?></td>
+                            <td><?= htmlspecialchars($course['entry_requirement'] ?? 'Not specified') ?></td>
                             <td><?= htmlspecialchars($course['status']) ?></td>
                         </tr>
                     <?php endforeach; ?>

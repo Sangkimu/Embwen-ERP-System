@@ -35,11 +35,14 @@ CREATE TABLE IF NOT EXISTS courses (
   course_name VARCHAR(150) NOT NULL,
   department_id INT UNSIGNED NOT NULL,
   duration_months SMALLINT UNSIGNED NOT NULL DEFAULT 12,
+  entry_requirement VARCHAR(150) NULL,
   status ENUM('active','inactive') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (course_id), UNIQUE KEY uq_course_code (course_code),
   CONSTRAINT fk_courses_department FOREIGN KEY (department_id) REFERENCES departments (department_id) ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='courses' AND COLUMN_NAME='entry_requirement')=0,'ALTER TABLE courses ADD COLUMN entry_requirement VARCHAR(150) NULL AFTER duration_months','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 
 CREATE TABLE IF NOT EXISTS notices (
   notice_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -65,6 +68,8 @@ CREATE TABLE IF NOT EXISTS students (
   previous_academic_level VARCHAR(100) NULL,
   year_of_completion YEAR NULL,
   course_id INT UNSIGNED NULL,
+  study_start_date DATE NULL,
+  expected_end_date DATE NULL,
   residency ENUM('boarder','dayscholar') NULL,
   status ENUM('active','graduated','withdrawn') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -102,6 +107,7 @@ CREATE TABLE IF NOT EXISTS admissions (
   admission_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   applicant_name VARCHAR(150) NOT NULL,
   course_id INT UNSIGNED NOT NULL,
+  residency ENUM('boarder','dayscholar') NULL,
   application_date DATE NOT NULL,
   admission_status ENUM('pending','admitted','rejected') NOT NULL DEFAULT 'pending',
   decided_by INT UNSIGNED NULL,
@@ -217,6 +223,9 @@ SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEM
 
 -- Profile completion migration.
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='phone')=0,'ALTER TABLE students ADD COLUMN phone VARCHAR(30) NULL AFTER id_no','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='study_start_date')=0,'ALTER TABLE students ADD COLUMN study_start_date DATE NULL AFTER course_id','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='expected_end_date')=0,'ALTER TABLE students ADD COLUMN expected_end_date DATE NULL AFTER study_start_date','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='admissions' AND COLUMN_NAME='residency')=0,"ALTER TABLE admissions ADD COLUMN residency ENUM('boarder','dayscholar') NULL AFTER course_id",'SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='identity_type')=0,"ALTER TABLE students ADD COLUMN identity_type ENUM('national_id','maisha_card') NULL AFTER name",'SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='national_id')=0,'ALTER TABLE students ADD COLUMN national_id VARCHAR(8) NULL AFTER identity_type','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='birth_certificate_no')=0,'ALTER TABLE students ADD COLUMN birth_certificate_no VARCHAR(30) NULL AFTER national_id','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;

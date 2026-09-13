@@ -76,6 +76,14 @@ $services = moduleServices('finance', user()['module'] === 'admin' ? 'finance_ma
         .service-row { display: flex; align-items: center; padding: 14px 16px; border-radius: 8px; border: 1px solid #edf2f7; text-decoration: none; color: inherit; transition: all 0.2s; background: #fff; margin-bottom: 10px; }
         .service-row:hover { border-color: #cbd5e0; background: #f7fafc; }
         .service-icon-box { background: #f0f4f8; color: #1e3d73; width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; margin-right: 16px; }
+        .document-actions { display:grid; gap:12px; margin-top:24px; }
+        .document-row { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; }
+        .document-row strong { display:block; color:#2d3748; font-size:13px; }
+        .document-row small { color:#718096; font-size:11px; }
+        .document-buttons { display:flex; gap:7px; flex-wrap:wrap; }
+        .document-button { border:0; border-radius:6px; padding:8px 10px; background:#1e3d73; color:#fff; font-size:11px; font-weight:700; cursor:pointer; text-decoration:none; }
+        .document-button.secondary { background:#e2e8f0; color:#2d3748; }
+        @media(max-width:600px){.document-row{display:block}.document-buttons{margin-top:10px}}
     </style>
 </head>
 <body>
@@ -154,10 +162,16 @@ $services = moduleServices('finance', user()['module'] === 'admin' ? 'finance_ma
                             Your account is assigned to the **Finance Department**. All logs submitted during this active session will be permanently tracked under your user name.
                         </p>
                     </div>
+                    <div class="card document-actions" style="background:#fff; padding:20px; border-radius:8px; border:1px solid #e2e8f0;">
+                        <h4 style="margin:0 0 2px; font-size:12px; text-transform:uppercase; color:#718096;">Reference Documents</h4>
+                        <div class="document-row"><div><strong>2026 Fee Structure</strong><small>Boarder and day-scholar schedules</small></div><div class="document-buttons"><a class="document-button" href="<?=htmlspecialchars(appAssetPath('Fee structure.pdf'))?>" target="_blank">View</a><button class="document-button" type="button" onclick="printPdf('<?=htmlspecialchars(appAssetPath('Fee structure.pdf'))?>')">Print</button><a class="document-button secondary" href="<?=htmlspecialchars(appAssetPath('Fee structure.pdf'))?>" download>Download</a></div></div>
+                        <div class="document-row"><div><strong>Payment Details</strong><small>Payment instructions and account details</small></div><div class="document-buttons"><a class="document-button" href="<?=htmlspecialchars(appAssetPath('Payment Details.pdf'))?>" target="_blank">View</a><button class="document-button" type="button" onclick="printPdf('<?=htmlspecialchars(appAssetPath('Payment Details.pdf'))?>')">Print</button><a class="document-button secondary" href="<?=htmlspecialchars(appAssetPath('Payment Details.pdf'))?>" download>Download</a></div></div>
+                    </div>
                 </section>
             </div>
         </section>
     </main>
 </div>
+<script>function printPdf(url){var pdf=window.open(url,'_blank');if(pdf){setTimeout(function(){pdf.print();},1000);}}</script>
 </body>
 </html>
