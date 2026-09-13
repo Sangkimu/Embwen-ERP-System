@@ -37,6 +37,9 @@ function appRedirectPath($relativePath){
  header('Location: ' . $location);
  exit;
 }
+function appAssetPath($relativePath){
+ return appBasePath() . '/' . implode('/', array_map('rawurlencode', array_values(array_filter(explode('/', ltrim((string)$relativePath, '/')), fn($segment) => $segment !== ''))));
+}
 function requireLogin(){ if(empty($_SESSION['user'])){ appRedirectPath('index.php'); } }
 function user(){ return $_SESSION['user'] ?? null; }
 function allowed($modules=[]){ return in_array(user()['module'] ?? '', $modules, true) || (user()['role'] ?? '')==='super_admin'; }

@@ -60,6 +60,7 @@ $expenses = $pdo->query($query)->fetchAll();
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" type="image/gif" href="<?=htmlspecialchars(appAssetPath('Images/logo.gif'))?>">
     <title>Expense Tracker Workspace</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>

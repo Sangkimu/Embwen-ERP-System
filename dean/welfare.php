@@ -63,6 +63,7 @@ $cases_list = $pdo->query("
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link rel="icon" type="image/gif" href="<?=htmlspecialchars(appAssetPath('Images/logo.gif'))?>">
     <title>Student Welfare & Discipline</title>
     <link rel="stylesheet" href="../assets/css/style.css">
     <style>

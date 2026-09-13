@@ -55,7 +55,7 @@ $applications = $stmt->fetchAll();
 <html>
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Admissions Management</title><link rel="stylesheet" href="../assets/css/style.css">
+<link rel="icon" type="image/gif" href="<?=htmlspecialchars(appAssetPath('Images/logo.gif'))?>"><title>Admissions Management</title><link rel="stylesheet" href="../assets/css/style.css">
 <style>
 .form-control{width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:5px;background:#fff}.filter{display:flex;gap:10px;align-items:end;margin-bottom:18px}.filter label{display:block;font-size:12px;font-weight:700;color:#475569;margin-bottom:5px}.filter select{min-width:180px}.application-table{width:100%;border-collapse:collapse}.application-table th,.application-table td{text-align:left;padding:12px;border-bottom:1px solid #e2e8f0;font-size:14px}.application-table th{background:#f8fafc;color:#475569;font-size:12px}.decision{display:flex;gap:6px;align-items:center}.decision input{width:130px}.btn{border:0;border-radius:5px;padding:9px 12px;color:#fff;font-weight:700;cursor:pointer}.btn-admit{background:#15803d}.btn-reject{background:#b91c1c}.badge{display:inline-block;padding:4px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase}.pending{background:#fef3c7;color:#92400e}.admitted{background:#dcfce7;color:#166534}.rejected{background:#fee2e2;color:#991b1b}@media(max-width:700px){.filter{display:block}.filter select{width:100%}.application-table{min-width:760px}}
 </style>
