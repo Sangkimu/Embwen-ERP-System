@@ -24,16 +24,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $studentId = null;
             if ($decision === 'admitted') {
-                $courseAbbreviation = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', (string)($application['course_code'] ?? 'ADM')));
-                $courseAbbreviation = $courseAbbreviation !== '' ? $courseAbbreviation : 'ADM';
-                $admissionNumber = $courseAbbreviation . '/' . date('y') . '/' . str_pad((string)$admissionId, 3, '0', STR_PAD_LEFT);
+                $admissionNumber = generateStudentIdNumber($pdo, (int)$application['course_id']);
                 $studentStmt = $pdo->prepare("INSERT INTO students (id_no, name, course_id, status) VALUES (?, ?, ?, 'active')");
                 $studentStmt->execute([$admissionNumber, $application['applicant_name'], $application['course_id']]);
                 $studentId = (int)$pdo->lastInsertId();
             }
 
-            $update = $pdo->prepare('UPDATE admissions SET admission_status=?, decision_date=CURDATE(), student_id=? WHERE admission_id=?');
-            $update->execute([$decision, $studentId, $admissionId]);
+            $update = $pdo->prepare('UPDATE admissions SET admission_status=?, decision_date=CURDATE(), student_id=?, decided_by=? WHERE admission_id=?');
+            $update->execute([$decision, $studentId, (int)(user()['id'] ?? 0), $admissionId]);
             $pdo->commit();
             $message = $decision === 'admitted' ? 'Applicant admitted and added to the student registry as ' . $admissionNumber . '.' : 'Application rejected successfully.';
             $messageClass = 'alert-success';

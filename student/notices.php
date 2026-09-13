@@ -11,7 +11,7 @@ requireCompleteStudentProfile($student);
 // 2. Fetch Targeted Notices (Ordered by latest first)
 $notices_list = [];
 if ($student) {
-    $notices_stmt = $pdo->prepare("SELECT * FROM notices WHERE target_audience IN ('all', 'students') ORDER BY created_at DESC");
+    $notices_stmt = $pdo->prepare("SELECT * FROM notices WHERE target_audience IN ('all', 'students') ORDER BY posted_on DESC");
     $notices_stmt->execute();
     $notices_list = $notices_stmt->fetchAll();
 }
@@ -41,7 +41,7 @@ $notices = count($notices_list);
             <?php foreach($notices_list as $item): ?>
                 <div class="notice-item" style="<?= (isset($item['is_pinned']) && $item['is_pinned']) ? 'border-left-color: #ef4444; background: #fffaf0;' : '' ?>">
                     <div class="notice-meta">
-                        <span>Posted on: <b><?= date('d M Y, h:i A', strtotime($item['created_at'])) ?></b></span>
+                        <span>Posted on: <b><?= date('d M Y, h:i A', strtotime($item['posted_on'])) ?></b></span>
                         <?php if(isset($item['is_pinned']) && $item['is_pinned']): ?>
                             <span class="badge-pinned">High Priority</span>
                         <?php endif; ?>

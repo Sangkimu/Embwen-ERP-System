@@ -42,11 +42,12 @@ function isNavActive($pageName, $currentPage) {
                 <li class="nav-item"><a href="notices.php" <?= isNavActive('notices.php', $currentPage) ?>><span class="nav-icon">📣</span> Notices</a></li>
             
             <!-- ================= ROLE MODULE 2: DEAN OF STUDENTS ================= -->
-            <?php elseif ($userRole === 'dean'): ?>
+            <?php elseif ($userModule === 'dean'): ?>
                 <li class="nav-item"><a href="index.php" <?= isNavActive('index.php', $currentPage) ?>><span class="nav-icon">📊</span> Dashboard Home</a></li>
                 <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Admissions & Registry</li>
                 <li class="nav-item"><a href="admissions.php" <?= isNavActive('admissions.php', $currentPage) ?>><span class="nav-icon">📝</span> Admissions & ID Generator</a></li>
                 <li class="nav-item"><a href="../students.php" <?= isNavActive('students.php', $currentPage) ?>><span class="nav-icon">👥</span> Student Registry</a></li>
+                <li class="nav-item"><a href="notices.php" <?= isNavActive('notices.php', $currentPage) ?>><span class="nav-icon">📣</span> Content & Notices</a></li>
                 <li class="nav-section-title" style="font-size: 11px; text-transform: uppercase; color: #a0aec0; letter-spacing: 0.5px; font-weight: 700; margin-top: 15px; margin-bottom: 5px; padding-left: 12px;">Boarding & Welfare</li>
                 <li class="nav-item"><a href="accommodation.php" <?= isNavActive('accommodation.php', $currentPage) ?>><span class="nav-icon">🏢</span> Boarding Management</a></li>
                 <li class="nav-item"><a href="welfare.php" <?= isNavActive('welfare.php', $currentPage) ?>><span class="nav-icon">🛡️</span> Student Welfare</a></li>

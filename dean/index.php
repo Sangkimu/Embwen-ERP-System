@@ -49,8 +49,17 @@ $services=moduleServices('dean',user()['role']);
     .badge-alert { background: #fef2f2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
     .badge-neutral { background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
     .badge-success { background: #e6f4ea; color: #137333; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 0.75rem; }
+    .quick-actions { display:flex; flex-wrap:wrap; gap:14px; margin:18px 0 24px; }
+    .quick-action { display:flex; align-items:center; gap:10px; background:#ffffff; border:1px solid #e2e8f0; border-left:4px solid #1e3d73; padding:12px 16px; border-radius:10px; text-decoration:none; box-shadow:0 2px 8px rgba(15,23,42,0.04); color:#1e293b; font-weight:700; }
+    .quick-action.secondary { border-left-color:#0f766e; }
+    .quick-action .mini-icon { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:0.9rem; background:#f1f5f9; }
 </style>
 </head><body><div class="app"><aside class="sidebar"><?php include "../partials/sidebar.php";?></aside><main class="main"><header class="topbar"><div class="module-tag">Workspace / <b>Dean</b></div><div class="top-user"><div class="avatar"><?=strtoupper(substr(user()['name'],0,2))?></div><?=htmlspecialchars(user()['name'])?></div></header><section class="content"><div class="page-head"><div><p class="eyebrow">DEAN MODULE</p><h1>Dean Dashboard</h1><p>Oversee polytechnic admissions, accommodations, and student support services.</p></div></div>
+
+<div class="quick-actions">
+    <a href="accommodation.php" class="quick-action"><span class="mini-icon">🏢</span> Boarding Management</a>
+    <a href="admissions.php" class="quick-action secondary"><span class="mini-icon">📝</span> Admissions & ID Generator</a>
+</div>
 
 <!-- The stats wrapper dynamically scales to display your 5th card tracking element cleanly -->
 <div class="stats">

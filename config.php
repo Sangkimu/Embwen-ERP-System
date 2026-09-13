@@ -7,7 +7,23 @@ try {
   PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC
  ]);
 } catch(PDOException $e){ die("Database connection failed."); }
-function requireLogin(){ if(empty($_SESSION['user'])){ header("Location: index.php"); exit; } }
+function appBasePath(){
+ $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '/');
+ $base = str_replace('\\', '/', $scriptDir);
+ if($base === '/' || $base === '\\'){ return ''; }
+ return rtrim($base, '/');
+}
+function appRedirectPath($relativePath){
+ $base = appBasePath();
+ $safePath = '/' . ltrim((string)$relativePath, '/');
+ $segments = array_values(array_filter(explode('/', $safePath), fn($segment) => $segment !== ''));
+ $encoded = implode('/', array_map('rawurlencode', $segments));
+ $location = ($base === '' ? '' : $base) . '/' . $encoded;
+ $location = preg_replace('#/+#', '/', $location);
+ header('Location: ' . $location);
+ exit;
+}
+function requireLogin(){ if(empty($_SESSION['user'])){ appRedirectPath('index.php'); } }
 function user(){ return $_SESSION['user'] ?? null; }
 function allowed($modules=[]){ return in_array(user()['module'] ?? '', $modules, true) || (user()['role'] ?? '')==='super_admin'; }
 function tableExists($pdo,$table){
@@ -62,6 +78,22 @@ function currentStudent($pdo){
  return $student ?: null;
 }
 function money($n){return "KES ".number_format((float)$n,2);}
+function generateStudentIdNumber($pdo, $courseId = null){
+    $courseCode = '';
+    if ($courseId) {
+        $stmt = $pdo->prepare('SELECT course_code FROM courses WHERE course_id = ? LIMIT 1');
+        $stmt->execute([$courseId]);
+        $courseCode = (string)($stmt->fetchColumn() ?: '');
+    }
+    $base = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $courseCode ?: 'REG'));
+    $base = $base !== '' ? $base : 'REG';
+    $year = date('y');
+    $pattern = $base . '/' . $year . '/%';
+    $stmt = $pdo->prepare("SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(id_no, '/', -1) AS UNSIGNED)), 0) + 1 FROM students WHERE id_no LIKE ?");
+    $stmt->execute([$pattern]);
+    $sequence = (int)$stmt->fetchColumn();
+    return sprintf('%s/%s/%03d', $base, $year, $sequence);
+}
 function fixedFeeSchedule2026(){
  return [
   'year'=>'2026',
@@ -161,8 +193,9 @@ function moduleServices($module, $role=null){
   'dean'=>[
     'courses'=>['label'=>'Courses','path'=>'../admin/courses.php','description'=>'Review course and department assignments.'],
     'departments'=>['label'=>'Departments','path'=>'../admin/departments.php','description'=>'Review academic departments.'],
-  'admissions'=>['label'=>'Admissions & ID Generator','path'=>'admissions.php','description'=>'Review applications and generate admission numbers.'],
-  'accommodation'=>['label'=>'Boarding Management','path'=>'accommodation.php','description'=>'Allocate and release hostel rooms.'],
+    'admissions'=>['label'=>'Admissions & ID Generator','path'=>'admissions.php','description'=>'Review applications and generate admission numbers.'],
+    'notices'=>['label'=>'Content & Notices','path'=>'notices.php','description'=>'Publish official notices and content for the campus.'],
+    'accommodation'=>['label'=>'Boarding Management','path'=>'accommodation.php','description'=>'Allocate and release hostel rooms.'],
     'welfare'=>['label'=>'Student Welfare','path'=>'welfare.php','description'=>'Manage student welfare cases.'],
     'students'=>['label'=>'Students','path'=>'../students.php','description'=>'Manage enrolled student records.']
   ],
@@ -175,7 +208,7 @@ function moduleServices($module, $role=null){
  $access=[
   'admin'=>['super_admin'=>['users','courses','departments','notices','finance'],'admin'=>['users','courses','departments','notices','finance'],'staff'=>['courses','departments','notices','finance']],
   'finance'=>['finance_manager'=>['payments','fees','expenses','reports'],'finance_officer'=>['payments','fees','reports'],'cashier'=>['payments']],
-    'dean'=>['dean'=>['courses','departments','admissions','accommodation','welfare','students'],'admissions_officer'=>['courses','departments','admissions'],'welfare_officer'=>['courses','departments','welfare'],'registrar'=>['courses','departments','admissions','accommodation','students']],
+    'dean'=>['dean'=>['courses','departments','admissions','notices','accommodation','welfare','students'],'admissions_officer'=>['courses','departments','admissions','notices'],'welfare_officer'=>['courses','departments','welfare'],'registrar'=>['courses','departments','admissions','notices','accommodation','students']],
   'students'=>['student'=>['profile','fees','notices']]
  ];
  $keys=$access[$module][$role] ?? [];

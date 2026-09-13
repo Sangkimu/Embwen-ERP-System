@@ -1,14 +1,14 @@
 <?php
 if(!defined('ERP_ENTRY_POINT')){
  $mode=$_GET['mode']??'login';
- header('Location: index.php'.($mode==='register'?'?mode=register':''));
- exit;
+ $redirect = 'index.php' . ($mode==='register' ? '?mode=register' : '');
+ appRedirectPath($redirect);
 }
 require_once "config.php";
 $homes=['admin'=>'admin/index.php','finance'=>'finance/index.php','dean'=>'dean/index.php','students'=>'student/index.php'];
 if(isset($_SESSION['user'])){
  $home=$_SESSION['user']['home']??($homes[$_SESSION['user']['module']??'']??null);
- if($home!==null){ header("Location: ".$home); exit; }
+ if($home!==null){ appRedirectPath($home); }
  unset($_SESSION['user']);
 }
 $mode=$_GET['mode']??'login';
@@ -78,7 +78,7 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
     'role'=>$account['role'] ?? 'admin',
     'home'=>$home
    ];
-   header('Location: '.$home); exit;
+   appRedirectPath($home);
   }
   $error='Invalid username or password.';
  }
