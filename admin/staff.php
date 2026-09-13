@@ -19,12 +19,16 @@ $moduleRoles = [
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isSuperAdmin) {
     $username = trim((string)($_POST['username'] ?? ''));
     $fullName = trim((string)($_POST['full_name'] ?? ''));
+    $idNumber = trim((string)($_POST['id_number'] ?? ''));
+    $identityType = (string)($_POST['identity_type'] ?? '');
+    $phone = trim((string)($_POST['phone'] ?? ''));
+    $staffNumber = trim((string)($_POST['staff_number'] ?? ''));
     $email = trim((string)($_POST['email'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
     $module = (string)($_POST['module'] ?? '');
     $role = (string)($_POST['role'] ?? '');
-    if ($username === '' || $fullName === '' || strlen($password) < 8 || !isset($moduleRoles[$module][$role])) {
-        $message = 'Enter all fields, choose a valid module and role, and use a password of at least 8 characters.';
+    if ($username === '' || $fullName === '' || !validIdentityNumber($idNumber, $identityType) || !validPhoneNumber($phone) || $staffNumber === '' || strlen($password) < 8 || !isset($moduleRoles[$module][$role])) {
+        $message = 'Use 8 digits for a National ID or 9 digits for a Maisha Card, and exactly 10 digits for the phone number.';
         $messageClass = 'alert-danger';
     } else {
         try {
@@ -33,8 +37,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isSuperAdmin) {
             if ($check->fetch()) {
                 throw new RuntimeException('That username is already in use.');
             }
-            $stmt = $pdo->prepare('INSERT INTO module_users (username,password_hash,full_name,module,role,email) VALUES (?,?,?,?,?,?)');
-            $stmt->execute([$username, password_hash($password, PASSWORD_DEFAULT), $fullName, $module, $role, $email !== '' ? $email : null]);
+            $stmt = $pdo->prepare('INSERT INTO module_users (username,password_hash,full_name,id_type,id_number,phone,staff_number,module,role,email) VALUES (?,?,?,?,?,?,?,?,?,?)');
+            $stmt->execute([$username, password_hash($password, PASSWORD_DEFAULT), $fullName, $identityType, $idNumber, $phone, $staffNumber, $module, $role, $email !== '' ? $email : null]);
             $message = 'Account created. Login username: ' . $username . ' | Module: ' . ucfirst($module) . ' | Role: ' . $moduleRoles[$module][$role] . '. Provide the password you entered to the user.';
             $messageClass = 'alert-success';
         } catch (Throwable $e) {
@@ -45,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isSuperAdmin) {
 }
 
 $users = $pdo->query("SELECT admin_id, username, full_name, role, email, status, created_at FROM admin_users ORDER BY created_at DESC")->fetchAll();
-$moduleUsers = $pdo->query("SELECT username, full_name, module, role, email, status, created_at FROM module_users WHERE module IN ('admin','finance','dean') ORDER BY created_at DESC")->fetchAll();
+$moduleUsers = $pdo->query("SELECT username, full_name, id_type, id_number, phone, staff_number, module, role, email, status, created_at FROM module_users WHERE module IN ('admin','finance','dean') ORDER BY created_at DESC")->fetchAll();
 ?>
 <!doctype html>
 <html lang="en">
@@ -88,6 +92,10 @@ $moduleUsers = $pdo->query("SELECT username, full_name, module, role, email, sta
                 <p class="text-muted">Create Admin, Finance, or Dean login credentials. Students register from the public login page.</p>
                 <form method="post" class="account-form">
                     <input name="full_name" placeholder="Full name" required>
+                    <select name="identity_type" required><option value="">ID type</option><option value="national_id">National ID (8 digits)</option><option value="maisha_card">Maisha Card (9 digits)</option></select>
+                    <input name="id_number" inputmode="numeric" pattern="\d{1,9}" maxlength="9" placeholder="Digits only; max 8 National ID / 9 Maisha Card" required>
+                    <input name="phone" type="tel" inputmode="numeric" pattern="\d{10}" maxlength="10" placeholder="Phone number (10 digits)" required>
+                    <input name="staff_number" placeholder="Staff number" required>
                     <input name="username" placeholder="Username" required autocomplete="off">
                     <input name="email" type="email" placeholder="Email (optional)">
                     <input name="password" type="password" minlength="8" placeholder="Temporary password" required>
@@ -120,7 +128,7 @@ $moduleUsers = $pdo->query("SELECT username, full_name, module, role, email, sta
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            <?php if ($moduleUsers): ?><h2 style="margin-top:28px; font-size:16px;">System Module Logins</h2><table><thead><tr><th>Name</th><th>Username</th><th>Module</th><th>Role</th><th>Status</th></tr></thead><tbody><?php foreach($moduleUsers as $moduleUser): ?><tr><td><?=htmlspecialchars($moduleUser['full_name'])?></td><td><?=htmlspecialchars($moduleUser['username'])?></td><td><?=htmlspecialchars(ucfirst($moduleUser['module']))?></td><td><?=htmlspecialchars($moduleUser['role'])?></td><td><?=htmlspecialchars($moduleUser['status'])?></td></tr><?php endforeach; ?></tbody></table><?php endif; ?>
+            <?php if ($moduleUsers): ?><h2 style="margin-top:28px; font-size:16px;">System Module Logins</h2><table><thead><tr><th>Name</th><th>ID Type</th><th>ID Number</th><th>Phone</th><th>Staff Number</th><th>Username</th><th>Module</th><th>Role</th><th>Status</th></tr></thead><tbody><?php foreach($moduleUsers as $moduleUser): ?><tr><td><?=htmlspecialchars($moduleUser['full_name'])?></td><td><?=htmlspecialchars($moduleUser['id_type'] === 'maisha_card' ? 'Maisha Card' : 'National ID')?></td><td><?=htmlspecialchars($moduleUser['id_number'])?></td><td><?=htmlspecialchars($moduleUser['phone'])?></td><td><?=htmlspecialchars($moduleUser['staff_number'])?></td><td><?=htmlspecialchars($moduleUser['username'])?></td><td><?=htmlspecialchars(ucfirst($moduleUser['module']))?></td><td><?=htmlspecialchars($moduleUser['role'])?></td><td><?=htmlspecialchars($moduleUser['status'])?></td></tr><?php endforeach; ?></tbody></table><?php endif; ?>
         </div>
     </main>
 </div>

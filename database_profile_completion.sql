@@ -1,5 +1,72 @@
 USE vocational_erp;
 
+SET @add_module_id_type = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'module_users' AND COLUMN_NAME = 'id_type') = 0,
+  "ALTER TABLE module_users ADD COLUMN id_type ENUM('national_id','maisha_card') NULL AFTER full_name",
+  'SELECT 1'
+);
+PREPARE stmt_module_id_type FROM @add_module_id_type;
+EXECUTE stmt_module_id_type;
+DEALLOCATE PREPARE stmt_module_id_type;
+
+SET @add_student_identity_type = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'identity_type') = 0,
+  "ALTER TABLE students ADD COLUMN identity_type ENUM('national_id','maisha_card') NULL AFTER name",
+  'SELECT 1'
+);
+PREPARE stmt_student_identity_type FROM @add_student_identity_type;
+EXECUTE stmt_student_identity_type;
+DEALLOCATE PREPARE stmt_student_identity_type;
+
+SET @add_student_national_id = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'national_id') = 0,
+  'ALTER TABLE students ADD COLUMN national_id VARCHAR(8) NULL AFTER identity_type',
+  'SELECT 1'
+);
+PREPARE stmt_student_national_id FROM @add_student_national_id;
+EXECUTE stmt_student_national_id;
+DEALLOCATE PREPARE stmt_student_national_id;
+
+SET @add_student_birth_certificate = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'birth_certificate_no') = 0,
+  'ALTER TABLE students ADD COLUMN birth_certificate_no VARCHAR(30) NULL AFTER national_id',
+  'SELECT 1'
+);
+PREPARE stmt_student_birth_certificate FROM @add_student_birth_certificate;
+EXECUTE stmt_student_birth_certificate;
+DEALLOCATE PREPARE stmt_student_birth_certificate;
+
+-- Add identity fields for Admin, Finance, and Dean module accounts.
+SET @add_module_id_number = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'module_users' AND COLUMN_NAME = 'id_number') = 0,
+  'ALTER TABLE module_users ADD COLUMN id_number VARCHAR(50) NULL AFTER full_name',
+  'SELECT 1'
+);
+PREPARE stmt_module_id_number FROM @add_module_id_number;
+EXECUTE stmt_module_id_number;
+DEALLOCATE PREPARE stmt_module_id_number;
+
+SET @add_module_phone = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'module_users' AND COLUMN_NAME = 'phone') = 0,
+  'ALTER TABLE module_users ADD COLUMN phone VARCHAR(30) NULL AFTER id_number',
+  'SELECT 1'
+);
+PREPARE stmt_module_phone FROM @add_module_phone;
+EXECUTE stmt_module_phone;
+DEALLOCATE PREPARE stmt_module_phone;
+
+SET @add_module_staff_number = IF(
+  (SELECT COUNT(*) FROM information_schema.COLUMNS
+   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'module_users' AND COLUMN_NAME = 'staff_number') = 0,
+  'ALTER TABLE module_users ADD COLUMN staff_number VARCHAR(50) NULL AFTER phone',
+  'SELECT 1'
+);
+PREPARE stmt_module_staff_number FROM @add_module_staff_number;
+EXECUTE stmt_module_staff_number;
+DEALLOCATE PREPARE stmt_module_staff_number;
+
 -- Add the fields required by student/complete_profile.php.
 SET @add_phone = IF(
   (SELECT COUNT(*) FROM information_schema.COLUMNS
@@ -88,5 +155,5 @@ SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE
 FROM information_schema.COLUMNS
 WHERE TABLE_SCHEMA = DATABASE()
   AND TABLE_NAME = 'students'
-  AND COLUMN_NAME IN ('id_no', 'phone', 'parent_name', 'parent_phone', 'previous_academic_level', 'year_of_completion', 'email', 'gender')
+  AND COLUMN_NAME IN ('id_no', 'national_id', 'birth_certificate_no', 'phone', 'parent_name', 'parent_phone', 'previous_academic_level', 'year_of_completion', 'email', 'gender')
 ORDER BY ORDINAL_POSITION;

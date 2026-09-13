@@ -17,16 +17,18 @@ $profileRequired = isset($_GET['required']) && $_GET['required'] === '1';
 // 2. Handle Profile Data Form Submission Postback
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id_no   = trim($_POST['id_no'] ?? '');
+    $nationalId = trim($_POST['national_id'] ?? '');
+    $birthCertificateNo = trim($_POST['birth_certificate_no'] ?? '');
     $phone   = trim($_POST['phone'] ?? '');
     $email   = trim($_POST['email'] ?? '');
     $gender  = trim($_POST['gender'] ?? '');
     $courseId = filter_input(INPUT_POST, 'course_id', FILTER_VALIDATE_INT);
     $residency = $_POST['residency'] ?? '';
 
-    if (!empty($id_no) && !empty($phone) && !empty($email) && !empty($gender) && $courseId && in_array($residency, ['boarder','dayscholar'], true)) {
+    if ($id_no !== '' && (validIdentityNumber($nationalId, 'national_id') || validBirthCertificateNumber($birthCertificateNo)) && validPhoneNumber($phone) && !empty($email) && !empty($gender) && $courseId && in_array($residency, ['boarder','dayscholar'], true)) {
         try {
-            $update = $pdo->prepare("UPDATE students SET id_no = ?, phone = ?, email = ?, gender = ?, course_id = ?, residency = ?, status = 'active' WHERE student_id = ?");
-            $update->execute([$id_no, $phone, $email, $gender, $courseId, $residency, $student['student_id']]);
+            $update = $pdo->prepare("UPDATE students SET national_id = ?, birth_certificate_no = ?, phone = ?, email = ?, gender = ?, course_id = ?, residency = ?, status = 'active' WHERE student_id = ?");
+            $update->execute([$nationalId !== '' ? $nationalId : null, $birthCertificateNo !== '' ? $birthCertificateNo : null, $phone, $email, $gender, $courseId, $residency, $student['student_id']]);
             
             // Success! Unlock workspace by routing straight back to the index dashboard
             header("Location: index.php");
@@ -35,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "System registry error during submission: " . $e->getMessage();
         }
     } else {
-        $error = "Please complete all required details, select your course, and choose Boarder or Dayscholar.";
+        $error = "Admission ID is required. Provide either a National ID (maximum 8 digits) or a Birth Certificate number, plus a 10-digit phone number.";
     }
 }
 ?>
@@ -139,12 +141,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="id_no">National ID / Passport / Birth Certificate No.</label>
-                                <input type="text" id="id_no" name="id_no" class="form-control" required placeholder="e.g., 38947210" value="<?= htmlspecialchars($student['id_no'] ?? '') ?>">
+                                <label for="id_no">Admission / Student ID</label>
+                                <input type="text" id="id_no" name="id_no" class="form-control" readonly required value="<?= htmlspecialchars($student['id_no'] ?? '') ?>">
+                                <label for="national_id">National ID <small>(optional if Birth Certificate is provided)</small></label>
+                                <input type="text" id="national_id" name="national_id" class="form-control" inputmode="numeric" pattern="\d{1,8}" maxlength="8" placeholder="Maximum 8 digits" value="<?= htmlspecialchars($student['national_id'] ?? '') ?>">
+                                <label for="birth_certificate_no">Birth Certificate No. <small>(required if no National ID)</small></label>
+                                <input type="text" id="birth_certificate_no" name="birth_certificate_no" class="form-control" inputmode="numeric" pattern="\d{1,30}" maxlength="30" placeholder="Digits only" value="<?= htmlspecialchars($student['birth_certificate_no'] ?? '') ?>">
                             </div>
                             <div class="form-group">
                                 <label for="phone">Primary Mobile Phone Number (Safaricom format)</label>
-                                <input type="tel" id="phone" name="phone" class="form-control" required placeholder="e.g., 0712345678" value="<?= htmlspecialchars($student['phone'] ?? '') ?>">
+                                <input type="tel" id="phone" name="phone" class="form-control" inputmode="numeric" pattern="\d{10}" maxlength="10" required placeholder="10 digits e.g. 0712345678" value="<?= htmlspecialchars($student['phone'] ?? '') ?>">
                             </div>
                         </div>
 

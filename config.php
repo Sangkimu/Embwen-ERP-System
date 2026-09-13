@@ -41,6 +41,12 @@ function appAssetPath($relativePath){
  return appBasePath() . '/' . implode('/', array_map('rawurlencode', array_values(array_filter(explode('/', ltrim((string)$relativePath, '/')), fn($segment) => $segment !== ''))));
 }
 function requireLogin(){ if(empty($_SESSION['user'])){ appRedirectPath('index.php'); } }
+function validPhoneNumber($phone){ return preg_match('/^\d{10}$/', (string)$phone) === 1; }
+function validIdentityNumber($number, $identityType){
+function validBirthCertificateNumber($number){ return preg_match('/^\d{1,30}$/', (string)$number) === 1; }
+ $length = $identityType === 'maisha_card' ? 9 : ($identityType === 'national_id' ? 8 : 0);
+ return $length > 0 && preg_match('/^\d{1,'.$length.'}$/', (string)$number) === 1;
+}
 function user(){ return $_SESSION['user'] ?? null; }
 function allowed($modules=[]){ return in_array(user()['module'] ?? '', $modules, true) || (user()['role'] ?? '')==='super_admin'; }
 function tableExists($pdo,$table){
@@ -49,7 +55,9 @@ function tableExists($pdo,$table){
  return (bool)$stmt->fetchColumn();
 }
 function studentProfileComplete($student){
- return is_array($student) && !empty($student['id_no']) && !empty($student['phone']) && !empty($student['email']) && !empty($student['gender']) && !empty($student['course_id']) && in_array($student['residency']??'', ['boarder','dayscholar'], true);
+ $hasNationalId = validIdentityNumber($student['national_id'] ?? '', 'national_id');
+ $hasBirthCertificate = validBirthCertificateNumber($student['birth_certificate_no'] ?? '');
+ return is_array($student) && !empty($student['id_no']) && ($hasNationalId || $hasBirthCertificate) && validPhoneNumber($student['phone'] ?? '') && !empty($student['email']) && !empty($student['gender']) && !empty($student['course_id']) && in_array($student['residency']??'', ['boarder','dayscholar'], true);
 }
 function requireCompleteStudentProfile($student){
  if(!studentProfileComplete($student)){ header('Location: complete_profile.php?required=1'); exit; }

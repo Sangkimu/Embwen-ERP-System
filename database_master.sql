@@ -56,6 +56,9 @@ CREATE TABLE IF NOT EXISTS students (
   student_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   id_no VARCHAR(30) NOT NULL,
   name VARCHAR(150) NOT NULL,
+  identity_type ENUM('national_id','maisha_card') NULL,
+  national_id VARCHAR(8) NULL,
+  birth_certificate_no VARCHAR(30) NULL,
   phone VARCHAR(30) NULL,
   parent_name VARCHAR(150) NULL,
   parent_phone VARCHAR(30) NULL,
@@ -195,6 +198,10 @@ CREATE TABLE IF NOT EXISTS module_users (
   username VARCHAR(100) NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   full_name VARCHAR(150) NOT NULL,
+  id_type ENUM('national_id','maisha_card') NULL,
+  id_number VARCHAR(50) NULL,
+  phone VARCHAR(30) NULL,
+  staff_number VARCHAR(50) NULL,
   module ENUM('admin','finance','dean','students') NOT NULL,
   role VARCHAR(50) NOT NULL,
   email VARCHAR(150) NULL,
@@ -204,8 +211,16 @@ CREATE TABLE IF NOT EXISTS module_users (
   PRIMARY KEY(user_id), UNIQUE KEY uq_module_username(username), UNIQUE KEY uq_admin_role_slot(admin_role_slot)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='module_users' AND COLUMN_NAME='id_number')=0,'ALTER TABLE module_users ADD COLUMN id_number VARCHAR(50) NULL AFTER full_name','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='module_users' AND COLUMN_NAME='phone')=0,'ALTER TABLE module_users ADD COLUMN phone VARCHAR(30) NULL AFTER id_number','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='module_users' AND COLUMN_NAME='staff_number')=0,'ALTER TABLE module_users ADD COLUMN staff_number VARCHAR(50) NULL AFTER phone','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+
 -- Profile completion migration.
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='phone')=0,'ALTER TABLE students ADD COLUMN phone VARCHAR(30) NULL AFTER id_no','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='identity_type')=0,"ALTER TABLE students ADD COLUMN identity_type ENUM('national_id','maisha_card') NULL AFTER name",'SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='national_id')=0,'ALTER TABLE students ADD COLUMN national_id VARCHAR(8) NULL AFTER identity_type','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='birth_certificate_no')=0,'ALTER TABLE students ADD COLUMN birth_certificate_no VARCHAR(30) NULL AFTER national_id','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='module_users' AND COLUMN_NAME='id_type')=0,"ALTER TABLE module_users ADD COLUMN id_type ENUM('national_id','maisha_card') NULL AFTER full_name",'SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='parent_name')=0,'ALTER TABLE students ADD COLUMN parent_name VARCHAR(150) NULL AFTER phone','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='parent_phone')=0,'ALTER TABLE students ADD COLUMN parent_phone VARCHAR(30) NULL AFTER parent_name','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='previous_academic_level')=0,'ALTER TABLE students ADD COLUMN previous_academic_level VARCHAR(100) NULL AFTER parent_phone','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;

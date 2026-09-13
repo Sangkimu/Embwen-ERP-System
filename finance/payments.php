@@ -16,8 +16,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST['action'] ?? '') === 'initi
     $phone = trim($_POST['phone_number'] ?? '');
     $accountReference = 'ERP-' . $studentId . '-' . $structureId . '-' . date('ymdHis');
     try {
-        if (!$studentId || !$structureId || $amountPaid <= 0 || $phone === '') {
-            throw new Exception('Student, fee item, amount, and phone number are required.');
+        if (!$studentId || !$structureId || $amountPaid <= 0 || !validPhoneNumber($phone)) {
+            throw new Exception('Student, fee item, amount, and exactly 10 phone digits are required.');
         }
         $match = $pdo->prepare("SELECT COUNT(*) FROM students s JOIN fee_structure fs ON fs.course_id=s.course_id WHERE s.student_id=? AND fs.fee_structure_id=? AND ".residencyFeeSql());
         $match->execute([$studentId, $structureId]);
@@ -297,7 +297,7 @@ $dashboardLink = '../' . user()['home'];
                     <h3 style="margin:0; font-size:16px; color:#1e3d73;">M-Pesa payment</h3>
                     <span style="background:#d1fae5; color:#065f46; border-radius:999px; padding:4px 10px; font-size:11px; font-weight:700; text-transform:uppercase;">STK Push</span>
                 </div>
-                <div class="form-group" id="phoneGroup" style="margin-bottom:0"><label for="phone_number">M-Pesa phone number</label><input class="form-control" id="phone_number" name="phone_number" type="tel" inputmode="tel" autocomplete="tel" placeholder="0712345678"><small class="field-hint">The customer will receive a payment prompt on this number. If cancelled, the request stays pending and is marked failed after timeout.</small></div>
+                <div class="form-group" id="phoneGroup" style="margin-bottom:0"><label for="phone_number">M-Pesa phone number</label><input class="form-control" id="phone_number" name="phone_number" type="tel" inputmode="numeric" pattern="\d{10}" maxlength="10" autocomplete="tel" placeholder="10 digits e.g. 0712345678"><small class="field-hint">The customer will receive a payment prompt on this number. If cancelled, the request stays pending and is marked failed after timeout.</small></div>
             </div>
             <div class="form-group" id="receiptGroup"><label for="receipt_no">Receipt number</label><input class="form-control" id="receipt_no" name="receipt_no" maxlength="50" autocomplete="off" placeholder="Enter the official receipt number"></div>
             <div class="modal-footer"><button type="button" class="btn-secondary" onclick="toggleModal(false)">Cancel</button><button type="submit" class="btn-primary" id="submitPayment">Save payment</button></div>
