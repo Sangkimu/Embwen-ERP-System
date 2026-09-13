@@ -5,6 +5,7 @@ $currentPage = basename($_SERVER['PHP_SELF']);
 // Extract the user role securely from active session context elements
 $userRole = user()['role'] ?? 'staff'; 
 $userModule = user()['module'] ?? '';
+$logoutPath = appBasePath() . '/logout.php';
 
 /**
  * Helper function to output active styles if the page matches
@@ -97,7 +98,7 @@ function isNavActive($pageName, $currentPage) {
             <span style="font-size: 13px; font-weight: 600; color: #ffffff;"><?= htmlspecialchars(user()['name'] ?? 'ERP User') ?></span>
             <span style="font-size: 11px; color: #cbd5e0; text-transform: capitalize;"><?= str_replace('_', ' ', $userRole) ?></span>
         </div>
-        <a href="../logout.php" title="Sign Out Session" style="color: #fc8181; text-decoration: none; font-size: 16px; transition: transform 0.2s; display: inline-block;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        <a href="<?=htmlspecialchars($logoutPath)?>" title="Sign Out Session" style="color: #fc8181; text-decoration: none; font-size: 16px; transition: transform 0.2s; display: inline-block;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
             🚪
         </a>
     </div>
