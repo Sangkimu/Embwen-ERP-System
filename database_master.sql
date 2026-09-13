@@ -56,12 +56,31 @@ CREATE TABLE IF NOT EXISTS students (
   student_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
   id_no VARCHAR(30) NOT NULL,
   name VARCHAR(150) NOT NULL,
+  phone VARCHAR(30) NULL,
+  parent_name VARCHAR(150) NULL,
+  parent_phone VARCHAR(30) NULL,
+  previous_academic_level VARCHAR(100) NULL,
+  year_of_completion YEAR NULL,
   course_id INT UNSIGNED NULL,
   residency ENUM('boarder','dayscholar') NULL,
   status ENUM('active','graduated','withdrawn') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (student_id), UNIQUE KEY uq_student_idno (id_no),
   CONSTRAINT fk_students_course FOREIGN KEY (course_id) REFERENCES courses (course_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS hostel_allocations (
+  allocation_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  student_id INT UNSIGNED NOT NULL,
+  hostel_name VARCHAR(100) NOT NULL,
+  room_no VARCHAR(50) NOT NULL,
+  status ENUM('allocated','released') NOT NULL DEFAULT 'allocated',
+  allocated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  released_at TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (allocation_id),
+  KEY idx_hostel_status_room (hostel_name, room_no, status),
+  KEY idx_hostel_student_status (student_id, status),
+  CONSTRAINT fk_hostel_student FOREIGN KEY (student_id) REFERENCES students (student_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS student_accounts (
@@ -187,6 +206,10 @@ CREATE TABLE IF NOT EXISTS module_users (
 
 -- Profile completion migration.
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='phone')=0,'ALTER TABLE students ADD COLUMN phone VARCHAR(30) NULL AFTER id_no','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='parent_name')=0,'ALTER TABLE students ADD COLUMN parent_name VARCHAR(150) NULL AFTER phone','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='parent_phone')=0,'ALTER TABLE students ADD COLUMN parent_phone VARCHAR(30) NULL AFTER parent_name','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='previous_academic_level')=0,'ALTER TABLE students ADD COLUMN previous_academic_level VARCHAR(100) NULL AFTER parent_phone','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='year_of_completion')=0,'ALTER TABLE students ADD COLUMN year_of_completion YEAR NULL AFTER previous_academic_level','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='email')=0,'ALTER TABLE students ADD COLUMN email VARCHAR(150) NULL AFTER phone','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='gender')=0,'ALTER TABLE students ADD COLUMN gender VARCHAR(20) NULL AFTER email','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 SET @sql = IF((SELECT IS_NULLABLE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='students' AND COLUMN_NAME='course_id')='NO','ALTER TABLE students MODIFY COLUMN course_id INT UNSIGNED NULL','SELECT 1'); PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;

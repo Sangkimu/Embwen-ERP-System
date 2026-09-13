@@ -13,7 +13,7 @@ function appBasePath(){
  if(empty($segments)){ return ''; }
  $moduleFolders = ['admin','finance','dean','student'];
  $last = end($segments);
- if(in_array($last, ['index.php','login.php','logout.php'], true)){
+ if($last !== false && strtolower(pathinfo($last, PATHINFO_EXTENSION)) === 'php'){
   array_pop($segments);
  }
  if(!empty($segments) && in_array(end($segments), $moduleFolders, true)){

@@ -10,6 +10,22 @@ if(!allowed(['dean', 'admin'])){
 $message = "";
 $studentSearch = trim($_GET['student_search'] ?? '');
 
+if (!tableExists($pdo, 'hostel_allocations')) {
+    $pdo->exec("CREATE TABLE hostel_allocations (
+        allocation_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+        student_id INT UNSIGNED NOT NULL,
+        hostel_name VARCHAR(100) NOT NULL,
+        room_no VARCHAR(50) NOT NULL,
+        status ENUM('allocated','released') NOT NULL DEFAULT 'allocated',
+        allocated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        released_at TIMESTAMP NULL DEFAULT NULL,
+        PRIMARY KEY (allocation_id),
+        KEY idx_hostel_status_room (hostel_name, room_no, status),
+        KEY idx_hostel_student_status (student_id, status),
+        CONSTRAINT fk_hostel_student FOREIGN KEY (student_id) REFERENCES students (student_id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+}
+
 // Handle allocation request submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action      = $_POST['action'] ?? 'allocate';
@@ -104,11 +120,16 @@ $allocations = $pdo->query("SELECT ha.*, s.name AS student_name, s.id_no, c.cour
 
             <?= $message ?>
 
+            <!-- Student search is separate so required allocation fields do not block it. -->
+            <form method="get" action="accommodation.php" class="student-search">
+                <input class="form-control" name="student_search" value="<?=htmlspecialchars($studentSearch)?>" placeholder="Search student name, admission number or course">
+                <button class="btn-assign" type="submit">Search</button>
+            </form>
+
             <!-- Allocation Entry Form -->
             <section class="card">
                 <h2>Assign Hostel Space</h2>
                 <form method="POST" action="accommodation.php" style="margin-top: 15px;">
-                    <div class="student-search"><input class="form-control" name="student_search" value="<?=htmlspecialchars($studentSearch)?>" placeholder="Search student name, admission number or course"><button class="btn-assign" type="submit" formmethod="get">Search</button></div>
                     <div class="form-row">
                         <div>
                             <label style="display:block; font-size:0.8rem; font-weight:bold; margin-bottom:5px; color:#475569;">STUDENT ID / ADMISSION</label>

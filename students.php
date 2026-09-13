@@ -4,12 +4,37 @@ requireLogin();
 if(!allowed(['admin','dean'])){http_response_code(403);die("Access denied.");}
 $dashboardLink = user()['home'] ?? 'index.php';
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    if (($_POST['action'] ?? '') === 'delete_student') {
+        $studentId = filter_input(INPUT_POST, 'student_id', FILTER_VALIDATE_INT);
+        if (!$studentId) {
+            header("Location: students.php?delete_error=Invalid+student+record"); exit;
+        }
+        try {
+            $paymentCheck = $pdo->prepare("SELECT COUNT(*) FROM fee_payments WHERE student_id=?");
+            $paymentCheck->execute([$studentId]);
+            $paymentCount = (int)$paymentCheck->fetchColumn();
+            $mpesaCount = 0;
+            if (tableExists($pdo, 'mpesa_transactions')) {
+                $mpesaCheck = $pdo->prepare("SELECT COUNT(*) FROM mpesa_transactions WHERE student_id=?");
+                $mpesaCheck->execute([$studentId]);
+                $mpesaCount = (int)$mpesaCheck->fetchColumn();
+            }
+            if ($paymentCount > 0 || $mpesaCount > 0) {
+                header("Location: students.php?delete_error=" . rawurlencode('This student has financial transactions and cannot be deleted.')); exit;
+            }
+            $delete = $pdo->prepare("DELETE FROM students WHERE student_id=?");
+            $delete->execute([$studentId]);
+            header("Location: students.php?deleted=1"); exit;
+        } catch (PDOException $e) {
+            header("Location: students.php?delete_error=" . rawurlencode('Student could not be deleted because linked records still exist.')); exit;
+        }
+    }
     $idNo = trim((string)($_POST['id_no'] ?? ''));
     if ($idNo === '') {
         $idNo = generateStudentIdNumber($pdo, isset($_POST['course_id']) && $_POST['course_id'] !== '' ? (int)$_POST['course_id'] : null);
     }
-    $stmt=$pdo->prepare("INSERT INTO students(id_no,name,course_id,status) VALUES(?,?,?,?)");
-    $stmt->execute([$idNo, trim($_POST['name']), $_POST['course_id'] !== '' ? $_POST['course_id'] : null, $_POST['status']]);
+    $stmt=$pdo->prepare("INSERT INTO students(id_no,name,phone,parent_name,parent_phone,previous_academic_level,year_of_completion,course_id,status) VALUES(?,?,?,?,?,?,?,?,?)");
+    $stmt->execute([$idNo, trim($_POST['name']), trim($_POST['phone']), trim($_POST['parent_name']), trim($_POST['parent_phone']), trim($_POST['previous_academic_level']), $_POST['year_of_completion'] !== '' ? (int)$_POST['year_of_completion'] : null, $_POST['course_id'] !== '' ? $_POST['course_id'] : null, $_POST['status']]);
     header("Location: students.php?added=1"); exit;
 }
 $courses=$pdo->query("SELECT course_id,course_code,course_name FROM courses WHERE status='active' ORDER BY course_name")->fetchAll();
@@ -21,9 +46,11 @@ $students=$pdo->query("SELECT s.*,c.course_code,c.course_name,d.department_name 
 <div class="app"><aside class="sidebar"><?php include "partials/sidebar.php"; ?></aside><main class="main"><header class="topbar"><button class="menu">☰</button><div class="search">⌕ <input placeholder="Search students..."></div><div class="top-actions"><div class="avatar"><?= strtoupper(substr(user()['name'] ?? 'ERP', 0, 2)) ?></div><div><strong><?= htmlspecialchars(user()['name'] ?? 'ERP User') ?></strong><small><?= htmlspecialchars(ucfirst((user()['role'] ?? 'admin'))) ?></small></div></div></header>
 <section class="content"><div class="page-head"><div><a href="<?=htmlspecialchars($dashboardLink)?>" style="display:inline-block;margin-bottom:12px;color:#174a9b;font-size:13px;font-weight:700;">← Back to dashboard</a><p class="eyebrow">STUDENT MANAGEMENT</p><h1>Student Registry</h1><p>Manage enrolled students and their course assignments.</p></div><button class="primary" onclick="openModal()">＋ Add Student</button></div>
 <?php if(isset($_GET['added'])): ?><div class="alert success">Student added successfully.</div><?php endif; ?>
+<?php if(isset($_GET['deleted'])): ?><div class="alert success">Student removed from the database.</div><?php endif; ?>
+<?php if(isset($_GET['delete_error'])): ?><div class="alert danger"><?=htmlspecialchars($_GET['delete_error'])?></div><?php endif; ?>
 <section class="card"><div class="toolbar"><div class="searchbox">⌕ <input id="studentSearch" onkeyup="filterTable('studentSearch','studentTable')" placeholder="Search by name, ID or course"></div><select><option>All statuses</option><option>Active</option><option>Graduated</option><option>Withdrawn</option></select></div>
-<div class="table-wrap"><table id="studentTable"><thead><tr><th>ID No.</th><th>Student</th><th>Department</th><th>Course</th><th>Status</th><th>Joined</th><th></th></tr></thead><tbody>
-<?php foreach($students as $s): ?><tr><td><b><?= htmlspecialchars($s['id_no']) ?></b></td><td><?= htmlspecialchars($s['name']) ?></td><td><?= htmlspecialchars($s['department_name'] ?? 'Pending') ?></td><td><b><?= htmlspecialchars($s['course_code'] ?? 'Pending') ?></b><small><?= htmlspecialchars($s['course_name'] ?? 'Course not assigned') ?></small></td><td><span class="status <?= $s['status'] ?>"><?= ucfirst($s['status']) ?></span></td><td><?= date('d M Y',strtotime($s['created_at'])) ?></td><td>⋮</td></tr><?php endforeach; ?>
-<?php if(!$students): ?><tr><td colspan="7" class="empty">No students found.</td></tr><?php endif; ?></tbody></table></div></section>
+<div class="table-wrap"><table id="studentTable"><thead><tr><th>ID No.</th><th>Student</th><th>Phone</th><th>Parent/Guardian</th><th>Parent Phone</th><th>Previous Academic Level</th><th>Completion Year</th><th>Department</th><th>Course</th><th>Status</th><th>Joined</th><th></th></tr></thead><tbody>
+<?php foreach($students as $s): ?><tr><td><b><?= htmlspecialchars($s['id_no']) ?></b></td><td><?= htmlspecialchars($s['name']) ?></td><td><?= htmlspecialchars($s['phone'] ?? 'Not provided') ?></td><td><?= htmlspecialchars($s['parent_name'] ?? 'Not provided') ?></td><td><?= htmlspecialchars($s['parent_phone'] ?? 'Not provided') ?></td><td><?= htmlspecialchars($s['previous_academic_level'] ?? 'Not provided') ?></td><td><?= htmlspecialchars($s['year_of_completion'] ?? 'Not provided') ?></td><td><?= htmlspecialchars($s['department_name'] ?? 'Pending') ?></td><td><b><?= htmlspecialchars($s['course_code'] ?? 'Pending') ?></b><small><?= htmlspecialchars($s['course_name'] ?? 'Course not assigned') ?></small></td><td><span class="status <?= $s['status'] ?>"><?= ucfirst($s['status']) ?></span></td><td><?= date('d M Y',strtotime($s['created_at'])) ?></td><td><form method="post" onsubmit="return confirm('Remove this student from the database? This cannot be undone.');"><input type="hidden" name="action" value="delete_student"><input type="hidden" name="student_id" value="<?= (int)$s['student_id'] ?>"><button type="submit" title="Remove student" style="border:0;background:transparent;color:#bd4242;font-weight:700;font-size:12px;cursor:pointer;padding:6px 0">Remove</button></form></td></tr><?php endforeach; ?>
+<?php if(!$students): ?><tr><td colspan="12" class="empty">No students found.</td></tr><?php endif; ?></tbody></table></div></section>
 </section></main></div>
-<div class="modal" id="studentModal"><div class="modal-box"><div class="modal-head"><h2>Add Student</h2><button type="button" onclick="closeModal()">×</button></div><form method="post"><label>Student ID Number<input name="id_no" placeholder="Leave blank to auto-generate"></label><label>Full Name<input name="name" required></label><label>Course<select name="course_id" required><option value="">Select course</option><?php foreach($courses as $c): ?><option value="<?= $c['course_id'] ?>"><?= htmlspecialchars($c['course_code'].' — '.$c['course_name']) ?></option><?php endforeach; ?></select></label><label>Status<select name="status"><option value="active">Active</option><option value="graduated">Graduated</option><option value="withdrawn">Withdrawn</option></select></label><div class="modal-actions"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button type="submit" class="primary">Save Student</button></div></form></div></div><script src="assets/js/app.js"></script></body></html>
+<div class="modal" id="studentModal"><div class="modal-box"><div class="modal-head"><h2>Add Student</h2><button type="button" onclick="closeModal()">×</button></div><form method="post"><label>Student ID Number<input name="id_no" placeholder="Leave blank to auto-generate"></label><label>Full Name<input name="name" required></label><label>Student Phone<input name="phone" type="tel" placeholder="e.g. 0712345678" required></label><label>Parent/Guardian Name<input name="parent_name" required></label><label>Parent/Guardian Phone<input name="parent_phone" type="tel" placeholder="e.g. 0712345678" required></label><label>Previous Academic Level<input name="previous_academic_level" placeholder="e.g. KCSE, Craft Certificate"></label><label>Year of Completion<input name="year_of_completion" type="number" min="1950" max="2100" placeholder="e.g. 2025"></label><label>Course<select name="course_id" required><option value="">Select course</option><?php foreach($courses as $c): ?><option value="<?= $c['course_id'] ?>"><?= htmlspecialchars($c['course_code'].' — '.$c['course_name']) ?></option><?php endforeach; ?></select></label><label>Status<select name="status"><option value="active">Active</option><option value="graduated">Graduated</option><option value="withdrawn">Withdrawn</option></select></label><div class="modal-actions"><button type="button" class="secondary" onclick="closeModal()">Cancel</button><button type="submit" class="primary">Save Student</button></div></form></div></div><script src="assets/js/app.js"></script></body></html>
