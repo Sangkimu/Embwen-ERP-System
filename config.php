@@ -8,17 +8,31 @@ try {
  ]);
 } catch(PDOException $e){ die("Database connection failed."); }
 function appBasePath(){
- $scriptDir = dirname($_SERVER['SCRIPT_NAME'] ?? '/');
- $base = str_replace('\\', '/', $scriptDir);
- if($base === '/' || $base === '\\'){ return ''; }
- return rtrim($base, '/');
+ $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
+ $segments = array_values(array_filter(explode('/', $scriptName), fn($segment) => $segment !== ''));
+ if(empty($segments)){ return ''; }
+ $moduleFolders = ['admin','finance','dean','student'];
+ $last = end($segments);
+ if(in_array($last, ['index.php','login.php','logout.php'], true)){
+  array_pop($segments);
+ }
+ if(!empty($segments) && in_array(end($segments), $moduleFolders, true)){
+  array_pop($segments);
+ }
+ if(empty($segments)){ return ''; }
+ return '/' . implode('/', array_map('rawurlencode', $segments));
 }
 function appRedirectPath($relativePath){
  $base = appBasePath();
- $safePath = '/' . ltrim((string)$relativePath, '/');
- $segments = array_values(array_filter(explode('/', $safePath), fn($segment) => $segment !== ''));
+ $relative = (string)$relativePath;
+ $query = '';
+ if(strpos($relative, '?') !== false){
+  [$relative, $query] = explode('?', $relative, 2);
+ }
+ $segments = array_values(array_filter(explode('/', $relative), fn($segment) => $segment !== ''));
  $encoded = implode('/', array_map('rawurlencode', $segments));
- $location = ($base === '' ? '' : $base) . '/' . $encoded;
+ $location = $base . '/' . $encoded;
+ if($query !== ''){ $location .= '?' . $query; }
  $location = preg_replace('#/+#', '/', $location);
  header('Location: ' . $location);
  exit;
