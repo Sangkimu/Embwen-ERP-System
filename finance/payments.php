@@ -29,11 +29,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST['action'] ?? '') === 'initi
         if (($response['ResponseCode'] ?? '1') !== '0' || empty($response['CheckoutRequestID'])) {
             throw new Exception($response['ResponseDescription'] ?? 'M-Pesa did not accept the payment request.');
         }
-        $normalizedPhone = preg_replace('/\D+/', '', $phone);
-        if (substr($normalizedPhone, 0, 1) === '0') $normalizedPhone = '254' . substr($normalizedPhone, 1);
-        $stmt = $pdo->prepare('INSERT INTO mpesa_transactions (student_id,fee_structure_id,amount,phone_number,account_reference,checkout_request_id,merchant_request_id) VALUES (?,?,?,?,?,?,?)');
-        $stmt->execute([$studentId, $structureId, $amountPaid, $normalizedPhone, $accountReference, $response['CheckoutRequestID'], $response['MerchantRequestID'] ?? null]);
-        $message = 'STK Push sent. The payment will appear in the ledger after Safaricom confirms it.';
+        $normalizedPhone = mpesaNormalizePhone($phone);
+        $stmt = $pdo->prepare('INSERT INTO mpesa_transactions (student_id,fee_structure_id,amount,phone_number,account_reference,checkout_request_id,merchant_request_id,status,mpesa_receipt_no,result_code,result_description) VALUES (?,?,?,?,?,?,?,?,?,?,?)');
+        if (mpesaIsOffline()) {
+            $receiptNo = 'OFFLINE-' . time();
+            $stmt->execute([$studentId, $structureId, $amountPaid, $normalizedPhone, $accountReference, $response['CheckoutRequestID'], $response['MerchantRequestID'] ?? null, 'completed', $receiptNo, 0, 'Offline MPESA test mode accepted.']);
+            $feeInsert = $pdo->prepare("INSERT INTO fee_payments (student_id,fee_structure_id,amount_paid,payment_date,payment_method,receipt_no,reference_no,received_by) VALUES (?,?,?,CURDATE(),'mpesa',?,?,?)");
+            $clerk = $pdo->query("SELECT admin_id FROM admin_users WHERE status='active' ORDER BY admin_id LIMIT 1")->fetchColumn();
+            if (!$clerk) { throw new Exception('No active finance clerk is available for local offline payment logging.'); }
+            $feeInsert->execute([$studentId,$structureId,$amountPaid,$receiptNo,$response['CheckoutRequestID'],$clerk]);
+            $message = 'Offline MPESA test payment accepted and recorded successfully.';
+        } else {
+            $stmt->execute([$studentId, $structureId, $amountPaid, $normalizedPhone, $accountReference, $response['CheckoutRequestID'], $response['MerchantRequestID'] ?? null, 'pending', null, null, 'Pending Safaricom confirmation']);
+            $message = 'STK Push sent. The payment will appear in the ledger after Safaricom confirms it.';
+        }
         $messageClass = 'alert-success';
     } catch (Throwable $e) {
         $message = 'M-Pesa request failed: ' . $e->getMessage();

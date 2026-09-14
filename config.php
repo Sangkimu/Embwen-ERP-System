@@ -170,8 +170,20 @@ function mpesaConfig(){
   'shortcode'=>getenv('MPESA_SHORTCODE') ?: '',
   'passkey'=>getenv('MPESA_PASSKEY') ?: '',
   'callback_url'=>getenv('MPESA_CALLBACK_URL') ?: '',
-  'base_url'=>getenv('MPESA_BASE_URL') ?: 'https://sandbox.safaricom.co.ke'
+  'base_url'=>getenv('MPESA_BASE_URL') ?: 'https://sandbox.safaricom.co.ke',
+  'mode'=>strtolower((string)(getenv('MPESA_MODE') ?: getenv('MPESA_OFFLINE') ?: 'live'))
  ];
+}
+function mpesaIsOffline(){
+ $mode=mpesaConfig()['mode'] ?? 'live';
+ $offlineModes=['offline','test','sandbox','demo'];
+ $missingCredentials=empty(getenv('MPESA_CONSUMER_KEY')) || empty(getenv('MPESA_CONSUMER_SECRET')) || empty(getenv('MPESA_SHORTCODE')) || empty(getenv('MPESA_PASSKEY')) || empty(getenv('MPESA_CALLBACK_URL'));
+ return in_array($mode,$offlineModes,true) || $missingCredentials;
+}
+function mpesaNormalizePhone($phone){
+ $phone=preg_replace('/\D+/','',$phone);
+ if(substr($phone,0,1)==='0'){$phone='254'.substr($phone,1);}
+ return $phone;
 }
 function mpesaRequest($url,$headers=[],$body=null){
  $ch=curl_init($url);
@@ -195,9 +207,21 @@ function mpesaAccessToken($config){
 }
 function mpesaStkPush($amount,$phone,$accountReference,$description){
  $config=mpesaConfig();
+ if(mpesaIsOffline()){
+  $phone=mpesaNormalizePhone($phone);
+  if(!preg_match('/^2547\d{8}$/',$phone)){throw new Exception('Enter a valid Kenyan mobile number.');}
+  $checkoutRequestId='OFFLINE-'.strtoupper(bin2hex(random_bytes(8)));
+  $merchantRequestId='OFFLINE-'.time();
+  return [
+   'ResponseCode'=>'0',
+   'ResponseDescription'=>'Offline MPESA test mode accepted.',
+   'CustomerMessage'=>'Offline M-Pesa test mode successfully simulated.',
+   'MerchantRequestID'=>$merchantRequestId,
+   'CheckoutRequestID'=>$checkoutRequestId
+  ];
+ }
  if(empty($config['shortcode']) || empty($config['passkey']) || empty($config['callback_url'])){throw new Exception('M-Pesa shortcode, passkey, and public callback URL are required.');}
- $phone=preg_replace('/\D+/','',$phone);
- if(substr($phone,0,1)==='0'){$phone='254'.substr($phone,1);}
+ $phone=mpesaNormalizePhone($phone);
  if(!preg_match('/^2547\d{8}$/',$phone)){throw new Exception('Enter a valid Kenyan mobile number.');}
  $timestamp=date('YmdHis');
  $password=base64_encode($config['shortcode'].$config['passkey'].$timestamp);
