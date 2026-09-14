@@ -7,6 +7,35 @@ try {
   PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC
  ]);
 } catch(PDOException $e){ die("Database connection failed."); }
+function ensureModuleUsersSchema($pdo){
+    try {
+        if (!tableExists($pdo, 'module_users')) {
+            return;
+        }
+        $index = $pdo->query("SHOW INDEX FROM module_users WHERE Key_name = 'uq_admin_role_slot'")->fetch();
+        if ($index) {
+            $pdo->exec("ALTER TABLE module_users DROP INDEX uq_admin_role_slot");
+        }
+        $column = $pdo->query("SHOW COLUMNS FROM module_users LIKE 'admin_role_slot'")->fetch();
+        if ($column) {
+            $pdo->exec("ALTER TABLE module_users DROP COLUMN admin_role_slot");
+        }
+    } catch (Throwable $e) {
+        // Ignore schema drift during early startup; the app will keep working with a valid schema.
+    }
+}
+ensureModuleUsersSchema($pdo);
+function setFlash($type, $message){
+    $_SESSION['flash'] = ['type' => $type, 'message' => trim((string)$message)];
+}
+function consumeFlash(){
+    if (empty($_SESSION['flash']) || !is_array($_SESSION['flash'])) {
+        return null;
+    }
+    $flash = $_SESSION['flash'];
+    unset($_SESSION['flash']);
+    return $flash;
+}
 function appBasePath(){
  $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/');
  $segments = array_values(array_filter(explode('/', $scriptName), fn($segment) => $segment !== ''));

@@ -237,15 +237,13 @@ CREATE TABLE IF NOT EXISTS module_users (
   email VARCHAR(150) NULL,
   status ENUM('active','inactive') NOT NULL DEFAULT 'active',
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  admin_role_slot VARCHAR(50) GENERATED ALWAYS AS (IF(module='admin', role, NULL)) STORED,
   PRIMARY KEY(user_id),
-  UNIQUE KEY uq_module_username(username),
-  UNIQUE KEY uq_admin_role_slot(admin_role_slot)
+  UNIQUE KEY uq_module_username(username)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- If module_users already exists, run this migration once:
--- ALTER TABLE module_users ADD admin_role_slot VARCHAR(50) GENERATED ALWAYS AS (IF(module='admin', role, NULL)) STORED;
--- ALTER TABLE module_users ADD UNIQUE KEY uq_admin_role_slot(admin_role_slot);
+-- If module_users already exists, run this migration once to remove the old admin-role cap:
+-- ALTER TABLE module_users DROP COLUMN admin_role_slot;
+-- ALTER TABLE module_users DROP INDEX uq_admin_role_slot;
 
 -- Example role design:
 -- admin: super_admin, admin, staff
