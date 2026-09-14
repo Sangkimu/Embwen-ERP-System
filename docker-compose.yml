@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # 1. The PHP & Web Server Container
+  erp-web:
+    image: php-erp-app:v1
+    container_name: erp_web_server
+    restart: always
+    ports:
+      - "80:80" # Maps local port 80 to the container so they can open http://localhost
+    depends_on:
+      - erp-db
+
+  # 2. The MySQL Database Container
+  erp-db:
+    image: mysql:8.0
+    container_name: erp_database
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: your_secure_root_password
+      MYSQL_DATABASE: erp_db_name
+    ports:
+      - "3306:3306"
+    volumes:
+      - erp_db_data:/var/lib/mysql
+
+volumes:
+  erp_db_data: # Ensures data survives computer restarts and shutdowns
