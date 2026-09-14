@@ -18,6 +18,16 @@ if($_SERVER['REQUEST_METHOD']==='POST'){
 }
 $departments=$pdo->query("SELECT department_id,department_name FROM departments ORDER BY department_name")->fetchAll();
 $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.duration_months, c.entry_requirement, d.department_name, c.status FROM courses c LEFT JOIN departments d ON d.department_id = c.department_id ORDER BY d.department_name, c.course_name")->fetchAll();
+$selectedCourseId = filter_input(INPUT_GET, 'course_id', FILTER_VALIDATE_INT);
+$selectedCourse = null;
+if ($selectedCourseId) {
+    foreach ($courses as $course) {
+        if ((int)$course['course_id'] === (int)$selectedCourseId) {
+            $selectedCourse = $course;
+            break;
+        }
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -39,6 +49,7 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.dura
         .registry-form input,.registry-form select { padding:10px; border:1px solid #cbd5e0; border-radius:6px; }
         .period { white-space:nowrap; }
         .registry-form button { background:#1e3d73; color:#fff; border:0; border-radius:6px; padding:10px 16px; font-weight:700; }
+        .clear-button { background:#e2e8f0 !important; color:#1e293b !important; }
         .registry-message { padding:10px 12px; background:#e6f4ea; color:#137333; border-radius:6px; margin-top:15px; }
         @media(max-width:800px){.registry-form{grid-template-columns:1fr;}}
         @media(max-width:700px){.sidebar{position:static;width:100%;min-height:auto;transform:none}.main{margin-left:0;width:100%}.content{padding:20px}.topbar{padding:0 18px}}
@@ -59,107 +70,69 @@ $courses = $pdo->query("SELECT c.course_id, c.course_code, c.course_name, c.dura
             <h1>Courses</h1>
             <p class="text-muted">Academic courses available in the college registry.</p>
             <?php if($message): ?><div class="registry-message"><?=htmlspecialchars($message)?></div><?php endif; ?>
-            <form class="registry-form" method="post"><input name="course_code" placeholder="Course code" required><input name="course_name" placeholder="Course name" required><select name="department_id" required><option value="">Department</option><?php foreach($departments as $department):?><option value="<?= (int)$department['department_id']?>"><?=htmlspecialchars($department['department_name'])?></option><?php endforeach;?></select><input name="duration_months" type="number" min="1" placeholder="Months" required><input name="entry_requirement" placeholder="Entry requirement (optional)"><button type="submit">Add course</button></form>
+            <form class="registry-form" method="post"><input name="course_code" placeholder="Course code" required><input name="course_name" placeholder="Course name" required><select name="department_id" required><option value="">Department</option><?php foreach($departments as $department):?><option value="<?= (int)$department['department_id']?>"><?=htmlspecialchars($department['department_name'])?></option><?php endforeach;?></select><input name="duration_months" type="number" min="1" placeholder="Months" required><input name="entry_requirement" placeholder="Entry requirement (optional)"><button type="reset" class="clear-button">Clear</button><button type="submit">Add course</button></form>
             
-            <!-- Dynamic Institutional Course Selector Dropdown List Component -->
-            <div class="filter-container">
-                <label class="filter-label" for="courseListSelector">Select Course Profile:</label>
-                <select id="courseListSelector" class="filter-select" onchange="filterCoursesTableSelection()">
-                    <option value="ALL">Show All System Records</option>
-                    
-                    <optgroup label="Hospitality & Institutional Management">
-                        <option value="Tailoring">Tailoring</option>
-                        <option value="Dressmaking">Dressmaking</option>
-                        <option value="Knitting">Knitting</option>
-                        <option value="Curtain Making">Curtain Making</option>
-                        <option value="Tie & Dye Decoration">Tie & Dye Decoration</option>
-                        <option value="Cushion Making">Cushion Making</option>
-                        <option value="Beauty Therapy">Beauty Therapy</option>
-                        <option value="Hairdressing">Hairdressing</option>
-                        <option value="Nail Technology">Nail Technology</option>
-                        <option value="Make-Up Application">Make-Up Application</option>
-                        <option value="Food & Beverage Production">Food & Beverage Production</option>
-                        <option value="Food & Beverage Service">Food & Beverage Service</option>
-                        <option value="Baking & Pastry">Baking & Pastry</option>
-                        <option value="Housekeeping">Housekeeping</option>
-                        <option value="Food Production & Cookery">Food Production & Cookery</option>
-                        <option value="Cake Making & Decoration">Cake Making & Decoration</option>
-                    </optgroup>
-
-                    <optgroup label="Building Department">
-                        <option value="Carpentry & Joinery">Carpentry & Joinery</option>
-                        <option value="Masonry">Masonry</option>
-                        <option value="Plumbing & Pipe Fittings">Plumbing & Pipe Fittings</option>
-                        <option value="Painting & Decoration">Painting & Decoration</option>
-                        <option value="Tiling">Tiling</option>
-                        <option value="Water Harvesting">Water Harvesting</option>
-                        <option value="Upholstering & Roofing">Upholstering & Roofing</option>
-                    </optgroup>
-
-                    <optgroup label="Mechanical Engineering">
-                        <option value="Welding & Fabrication">Welding & Fabrication (Grade III)</option>
-                        <option value="Light Vehicle Mechanic">Light Vehicle Mechanic (MVM)</option>
-                        <option value="Motor Vehicle Electrician">Motor Vehicle Electrician</option>
-                        <option value="Plant Mechanics">Plant Mechanics</option>
-                    </optgroup>
-
-                    <optgroup label="ICT Department">
-                        <option value="Computer Operator">Computer Operator</option>
-                        <option value="Computer Packages">Computer Packages</option>
-                    </optgroup>
-
-                    <optgroup label="Electrical Department">
-                        <option value="Electrical Wireman">Electrical Wireman</option>
-                        <option value="Basic Electrical Wiring & Safety">Basic Electrical Wiring & Safety</option>
-                    </optgroup>
+            <div class="filter-container" style="display:block; margin-top:25px; margin-bottom:15px;">
+                <label class="filter-label" for="courseDirectorySelector">Course directory</label>
+                <select id="courseDirectorySelector" class="filter-select" onchange="showCourseDetails(this)">
+                    <option value="">Select a course</option>
+                    <?php foreach ($courses as $course): ?>
+                        <option value="<?= htmlspecialchars($course['course_name'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-code="<?= htmlspecialchars($course['course_code'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-department="<?= htmlspecialchars($course['department_name'] ?? '-', ENT_QUOTES, 'UTF-8') ?>"
+                            data-duration="<?= htmlspecialchars((int)$course['duration_months'], ENT_QUOTES, 'UTF-8') ?>"
+                            data-requirement="<?= htmlspecialchars($course['entry_requirement'] ?? 'Not specified', ENT_QUOTES, 'UTF-8') ?>"
+                            data-status="<?= htmlspecialchars($course['status'], ENT_QUOTES, 'UTF-8') ?>"
+                            <?= $selectedCourseId && (int)$course['course_id'] === (int)$selectedCourseId ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($course['course_name']) ?> (<?= htmlspecialchars($course['course_code']) ?>)
+                        </option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
-            <table id="coursesTable">
-                <thead>
-                    <tr>
-                        <th>Code</th>
-                        <th>Course</th>
-                        <th>Department</th>
-                        <th>Period of Study</th>
-                        <th>Entry Requirement</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($courses as $course): ?>
-                        <!-- Custom normalization lowercase match string to prevent text structure checking conflicts -->
-                        <tr data-name="<?= htmlspecialchars(strtolower($course['course_name'])) ?>">
-                            <td><?= htmlspecialchars($course['course_code']) ?></td>
-                            <td><?= htmlspecialchars($course['course_name']) ?></td>
-                            <td><?= htmlspecialchars($course['department_name'] ?? '-') ?></td>
-                            <td class="period"><?= (int)$course['duration_months'] % 12 === 0 ? ((int)$course['duration_months'] / 12).' year'.((int)$course['duration_months'] === 12 ? '' : 's') : (int)$course['duration_months'].' months' ?></td>
-                            <td><?= htmlspecialchars($course['entry_requirement'] ?? 'Not specified') ?></td>
-                            <td><?= htmlspecialchars($course['status']) ?></td>
-                        </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+            <div id="courseDirectoryDetail" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; color:#4a5568; min-height:80px; display:flex; align-items:center;">
+                <?php if ($selectedCourse): ?>
+                    <strong><?= htmlspecialchars($selectedCourse['course_name']) ?></strong><br>
+                    Code: <?= htmlspecialchars($selectedCourse['course_code']) ?><br>
+                    Department: <?= htmlspecialchars($selectedCourse['department_name'] ?? '-') ?><br>
+                    Duration: <?= (int)$selectedCourse['duration_months'] % 12 === 0 ? ((int)$selectedCourse['duration_months'] / 12) . ' year' . (((int)$selectedCourse['duration_months'] === 12) ? '' : 's') : (int)$selectedCourse['duration_months'] . ' months' ?><br>
+                    Entry Requirement: <?= htmlspecialchars($selectedCourse['entry_requirement'] ?? 'Not specified') ?><br>
+                    Status: <?= htmlspecialchars($selectedCourse['status']) ?>
+                <?php else: ?>
+                    Select a course to view its department, duration, entry requirement, and status.
+                <?php endif; ?>
+            </div>
         </div>
     </main>
 </div>
 
 <script>
-function filterCoursesTableSelection() {
-    const selectedValue = document.getElementById('courseListSelector').value.toLowerCase();
-    const tableRows = document.querySelectorAll('#coursesTable tbody tr');
+function showCourseDetails(select) {
+    const detailBox = document.getElementById('courseDirectoryDetail');
+    const selected = select.options[select.selectedIndex];
 
-    tableRows.forEach(row => {
-        const courseNameAttr = row.getAttribute('data-name');
-        
-        // Match using a sub-string filter match configuration sequence matrix
-        if (selectedValue === "all" || courseNameAttr.includes(selectedValue)) {
-            row.style.display = "";
-        } else {
-            row.style.display = "none";
-        }
-    });
+    if (!selected || !selected.value) {
+        detailBox.innerHTML = 'Select a course to view its department, duration, entry requirement, and status.';
+        return;
+    }
+
+    const duration = Number(selected.dataset.duration || 0);
+    const durationLabel = duration % 12 === 0 ? (duration / 12) + ' year' + (duration === 12 ? '' : 's') : duration + ' months';
+
+    detailBox.innerHTML = '<strong>' + selected.value + '</strong><br>' +
+        'Code: ' + selected.dataset.code + '<br>' +
+        'Department: ' + selected.dataset.department + '<br>' +
+        'Duration: ' + durationLabel + '<br>' +
+        'Entry Requirement: ' + selected.dataset.requirement + '<br>' +
+        'Status: ' + selected.dataset.status;
 }
+
+window.addEventListener('DOMContentLoaded', function () {
+    const courseSelect = document.getElementById('courseDirectorySelector');
+    if (courseSelect && courseSelect.value) {
+        showCourseDetails(courseSelect);
+    }
+});
 </script>
 </body>
 </html>

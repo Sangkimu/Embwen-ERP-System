@@ -50,6 +50,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isSuperAdmin) {
 
 $users = $pdo->query("SELECT admin_id, username, full_name, role, email, status, created_at FROM admin_users ORDER BY created_at DESC")->fetchAll();
 $moduleUsers = $pdo->query("SELECT username, full_name, id_type, id_number, phone, staff_number, module, role, email, status, created_at FROM module_users WHERE module IN ('admin','finance','dean') ORDER BY created_at DESC")->fetchAll();
+$staffDirectory = $pdo->query("SELECT admin_id, full_name, username, role, status FROM admin_users ORDER BY full_name")->fetchAll();
+$selectedStaffId = filter_input(INPUT_GET, 'staff_id', FILTER_VALIDATE_INT);
+$selectedStaff = null;
+if ($selectedStaffId) {
+    foreach ($staffDirectory as $staff) {
+        if ((int)$staff['admin_id'] === (int)$selectedStaffId) {
+            $selectedStaff = $staff;
+            break;
+        }
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -74,6 +85,7 @@ $moduleUsers = $pdo->query("SELECT username, full_name, id_type, id_number, phon
         .account-form { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:18px; padding:16px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; }
         .account-form input,.account-form select { width:100%; box-sizing:border-box; padding:10px; border:1px solid #cbd5e0; border-radius:6px; }
         .account-form button { background:#1e3d73; color:#fff; border:0; border-radius:6px; padding:10px 16px; font-weight:700; cursor:pointer; }
+        .clear-button { background:#e2e8f0 !important; color:#1e293b !important; }
         .password-field { position:relative; }
         .password-field input { padding-right:40px; }
         .password-toggle { position:absolute; right:8px; top:50%; transform:translateY(-50%); border:0; background:transparent; color:#64748b; cursor:pointer; padding:4px; }
@@ -90,6 +102,30 @@ $moduleUsers = $pdo->query("SELECT username, full_name, id_type, id_number, phon
             <h1>Staff Accounts</h1>
             <p class="text-muted">Manage admin and staff user accounts for the ERP.</p>
             <?php if ($message): ?><div class="alert <?=htmlspecialchars($messageClass)?>"><?=htmlspecialchars($message)?></div><?php endif; ?>
+
+            <div style="margin-top:18px; margin-bottom:12px;">
+                <label for="staffDirectorySelector" style="display:block; margin-bottom:8px; font-size: 14px; font-weight: 600; color: #4a5568;">Staff directory</label>
+                <select id="staffDirectorySelector" style="width:100%; max-width:420px; padding:10px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; font-size:14px;" onchange="window.location.href = 'staff.php?staff_id=' + this.value">
+                    <option value="">Select a staff account</option>
+                    <?php foreach ($staffDirectory as $staff): ?>
+                        <option value="<?= (int)$staff['admin_id'] ?>" <?= $selectedStaffId && (int)$staff['admin_id'] === (int)$selectedStaffId ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($staff['full_name']) ?> (<?= htmlspecialchars($staff['username']) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div id="staffDirectoryDetail" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; color:#4a5568; min-height:70px; display:flex; align-items:center;">
+                <?php if ($selectedStaff): ?>
+                    <strong><?= htmlspecialchars($selectedStaff['full_name']) ?></strong><br>
+                    Username: <?= htmlspecialchars($selectedStaff['username']) ?><br>
+                    Role: <?= htmlspecialchars($selectedStaff['role']) ?><br>
+                    Status: <?= htmlspecialchars($selectedStaff['status']) ?>
+                <?php else: ?>
+                    Select a staff member to view their account details.
+                <?php endif; ?>
+            </div>
+
             <?php if ($isSuperAdmin): ?>
                 <h2 style="margin:20px 0 0; font-size:16px;">Create System User</h2>
                 <p class="text-muted">Create Admin, Finance, or Dean login credentials. Students register from the public login page.</p>
@@ -104,6 +140,7 @@ $moduleUsers = $pdo->query("SELECT username, full_name, id_type, id_number, phon
                     <div class="password-field"><input id="systemPassword" name="password" type="password" minlength="8" placeholder="Temporary password" required><button type="button" class="password-toggle" onclick="togglePassword('systemPassword', this)" aria-label="Show password" title="Show password">◉</button></div>
                     <select name="module" id="systemModule" required onchange="updateSystemRoles()"><option value="">Choose module</option><option value="admin">Admin</option><option value="finance">Finance</option><option value="dean">Dean</option></select>
                     <select name="role" id="systemRole" required><option value="">Choose role</option></select>
+                    <button type="reset" class="clear-button">Clear</button>
                     <button type="submit">Create Login</button>
                 </form>
             <?php endif; ?>

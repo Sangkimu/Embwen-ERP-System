@@ -141,16 +141,23 @@ $services = moduleServices('finance', user()['module'] === 'admin' ? 'finance_ma
             <div class="dashboard-layout">
                 <section class="card" style="background:#fff; padding:24px; border-radius:8px; border:1px solid #e2e8f0;">
                     <h3 style="margin:0 0 15px 0; font-size:15px; text-transform:uppercase; color:#4a5568; letter-spacing:0.5px;">Authorized Workspace Submodules</h3>
+                    <div style="margin-bottom:16px;">
+                        <label for="financeQuickNav" style="display:block; margin-bottom:8px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Quick module access</label>
+                        <select id="financeQuickNav" style="width:100%; padding:10px 12px; border:1px solid #cbd5e0; border-radius:8px; background:#fff; font-size:14px;" onchange="navigateToService(this.value)">
+                            <option value="">Select a module</option>
+                            <?php foreach($services as $service): ?>
+                                <option value="<?= htmlspecialchars($service['path'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($service['label']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                     <div class="services-list">
-                        <?php foreach($services as $s): ?>
-                            <a class="service-row" href="<?= htmlspecialchars($s['path']) ?>">
-                                <div class="service-icon-box">◆</div>
-                                <div>
-                                    <b style="color:#2d3748; font-size:14px;"><?= htmlspecialchars($s['label']) ?></b>
-                                    <small style="display:block; color:#718096; font-size:12px; margin-top:2px;"><?= htmlspecialchars($s['description']) ?></small>
-                                </div>
-                            </a>
-                        <?php endforeach; ?>
+                        <div class="service-row">
+                            <div class="service-icon-box">◆</div>
+                            <div>
+                                <b style="color:#2d3748; font-size:14px;">Use the quick-access dropdown above</b>
+                                <small style="display:block; color:#718096; font-size:12px; margin-top:2px;">Jump directly to the finance tool you need without a long list.</small>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -172,6 +179,11 @@ $services = moduleServices('finance', user()['module'] === 'admin' ? 'finance_ma
         </section>
     </main>
 </div>
-<script>function printPdf(url){var pdf=window.open(url,'_blank');if(pdf){setTimeout(function(){pdf.print();},1000);}}</script>
+<script>
+function navigateToService(path) {
+    if (!path) return;
+    window.location.href = path;
+}
+function printPdf(url){var pdf=window.open(url,'_blank');if(pdf){setTimeout(function(){pdf.print();},1000);}}</script>
 </body>
 </html>

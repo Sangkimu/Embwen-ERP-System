@@ -76,9 +76,15 @@ if($student && tableExists($pdo,'semesters')) {
         <?php endif; ?>
         
         <h2 style="margin-top: 30px;">Your Modules</h2>
-        <?php foreach($services as $s):?>
-            <a class="service" href="<?=htmlspecialchars($s['path'])?>"><div class="service-icon">◆</div><div><b><?=htmlspecialchars($s['label'])?></b><small><?=htmlspecialchars($s['description'])?></small></div></a>
-        <?php endforeach;?>
+        <div style="margin-top:12px;">
+            <label for="studentQuickNav" style="display:block; margin-bottom:8px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#475569;">Quick module access</label>
+            <select id="studentQuickNav" style="width:100%; padding:10px 12px; border:1px solid #cbd5e0; border-radius:8px; background:#fff; font-size:14px;" onchange="navigateToService(this.value)">
+                <option value="">Select a module</option>
+                <?php foreach($services as $service): ?>
+                    <option value="<?= htmlspecialchars($service['path'], ENT_QUOTES, 'UTF-8') ?>"><?= htmlspecialchars($service['label']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
     </section>
 
     <!-- Right Column: Account Meta details and Semester Statements -->
@@ -98,4 +104,11 @@ if($student && tableExists($pdo,'semesters')) {
     </section>
 </div>
 
-</section></main></div></body></html>
+</section></main></div>
+<script>
+function navigateToService(path) {
+    if (!path) return;
+    window.location.href = path;
+}
+</script>
+</body></html>

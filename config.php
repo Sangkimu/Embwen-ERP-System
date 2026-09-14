@@ -110,13 +110,20 @@ function generateStudentIdNumber($pdo, $courseId = null){
         $stmt->execute([$courseId]);
         $courseCode = (string)($stmt->fetchColumn() ?: '');
     }
-    $base = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $courseCode ?: 'REG'));
-    $base = $base !== '' ? $base : 'REG';
+
+    $lettersOnly = strtoupper(preg_replace('/[^A-Za-z]/', '', $courseCode ?: 'REG'));
+    if ($lettersOnly !== '') {
+        $base = substr($lettersOnly, 0, 2);
+    } else {
+        $base = 'REG';
+    }
+
     $year = date('y');
     $pattern = $base . '/' . $year . '/%';
     $stmt = $pdo->prepare("SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(id_no, '/', -1) AS UNSIGNED)), 0) + 1 FROM students WHERE id_no LIKE ?");
     $stmt->execute([$pattern]);
     $sequence = (int)$stmt->fetchColumn();
+
     return sprintf('%s/%s/%03d', $base, $year, $sequence);
 }
 function fixedFeeSchedule2026(){

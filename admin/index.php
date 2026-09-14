@@ -22,6 +22,9 @@ $recentUsers = [];
 if ($userRole === 'super_admin' || $userRole === 'admin') {
     $recentUsers = $pdo->query("SELECT username, full_name, role, status FROM admin_users ORDER BY created_at DESC LIMIT 5")->fetchAll();
 }
+
+$courseDirectory = $pdo->query("SELECT course_id, course_name, course_code, status FROM courses WHERE status = 'active' ORDER BY course_name")->fetchAll();
+$departmentDirectory = $pdo->query("SELECT department_id, department_name FROM departments ORDER BY department_name")->fetchAll();
 ?>
 <!doctype html>
 <html>
@@ -47,6 +50,9 @@ if ($userRole === 'super_admin' || $userRole === 'admin') {
         .notice-item { background: #f7fafc; border-left: 3px solid #3182ce; padding: 12px; border-radius: 4px; margin-bottom: 12px; }
         .notice-item h4 { margin: 0 0 4px 0; color: #2d3748; }
         .notice-item p { margin: 0; font-size: 13px; color: #4a5568; }
+        .directory-select-wrap { display: grid; gap: 12px; }
+        .directory-select { width: 100%; padding: 11px 12px; border: 1px solid #cbd5e0; border-radius: 6px; background: white; font-size: 14px; color: #2d3748; }
+        .directory-select:focus { outline: none; border-color: #1e3d73; box-shadow: 0 0 0 3px rgba(30,61,115,0.12); }
     </style>
 </head>
 <body>
@@ -114,9 +120,29 @@ if ($userRole === 'super_admin' || $userRole === 'admin') {
 
                     <div class="card" style="background:white; padding:20px; border-radius:8px; border:1px solid #edf2f7;">
                         <h3 style="margin-top:0; margin-bottom:15px; font-size:15px;">Administrative Quick Links</h3>
-                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-                            <a href="courses.php" style="padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; color:#2d3748; text-decoration:none; font-weight:600; text-align:center;">📚 Setup Courses & Depts</a>
-                            <a href="notices.php" style="padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; color:#2d3748; text-decoration:none; font-weight:600; text-align:center;">📣 Post Notice Bulletin</a>
+                        <div class="directory-select-wrap">
+                            <div>
+                                <label for="courseDirectorySelect" style="display:block; margin-bottom:8px; color:#4a5568; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Course Directory</label>
+                                <select id="courseDirectorySelect" class="directory-select" onchange="redirectToCourse(this.value)">
+                                    <option value="">Select a course</option>
+                                    <?php foreach ($courseDirectory as $course): ?>
+                                        <option value="<?= (int)$course['course_id'] ?>"><?= htmlspecialchars($course['course_name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="departmentDirectorySelect" style="display:block; margin-bottom:8px; color:#4a5568; font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">Department Directory</label>
+                                <select id="departmentDirectorySelect" class="directory-select" onchange="redirectToDepartment(this.value)">
+                                    <option value="">Select a department</option>
+                                    <?php foreach ($departmentDirectory as $department): ?>
+                                        <option value="<?= (int)$department['department_id'] ?>"><?= htmlspecialchars($department['department_name']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+                                <a href="courses.php" style="padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; color:#2d3748; text-decoration:none; font-weight:600; text-align:center;">📚 Course Setup</a>
+                                <a href="notices.php" style="padding:15px; background:#f7fafc; border:1px solid #e2e8f0; border-radius:6px; color:#2d3748; text-decoration:none; font-weight:600; text-align:center;">📣 Bulletin</a>
+                            </div>
                         </div>
                     </div>
 
@@ -141,5 +167,16 @@ if ($userRole === 'super_admin' || $userRole === 'admin') {
         </section>
     </main>
 </div>
+<script>
+function redirectToCourse(courseId) {
+    if (!courseId) return;
+    window.location.href = 'courses.php?course_id=' + encodeURIComponent(courseId);
+}
+
+function redirectToDepartment(departmentId) {
+    if (!departmentId) return;
+    window.location.href = 'departments.php?department_id=' + encodeURIComponent(departmentId);
+}
+</script>
 </body>
 </html>

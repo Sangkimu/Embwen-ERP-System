@@ -66,6 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .profile-required-box button { border: 0; border-radius: 5px; padding: 11px 16px; background: #1e3d73; color: #fff; font-weight: 700; cursor: pointer; }
         .btn-save-profile { background: #1e3d73; color: #fff; border: none; padding: 12px 25px; border-radius: 4px; font-weight: bold; font-size: 0.9rem; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px; display: inline-block; }
         .btn-save-profile:hover { background: #142a52; }
+        .btn-clear-profile { background: #e2e8f0; color: #1e293b; border: none; padding: 12px 20px; border-radius: 4px; font-weight: bold; font-size: 0.9rem; cursor: pointer; margin-right: 10px; }
     </style>
 </head>
 <body>
@@ -119,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <div class="form-group">
-                            <label for="course_id">Course and Department</label>
+                            <label for="course_id">Course and Department <span style="color:#dc2626;">*</span></label>
                             <select id="course_id" name="course_id" class="form-control" required>
                                 <option value="">-- Select your course --</option>
                                 <?php foreach($courses as $course): ?>
@@ -130,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <div class="form-group">
-                            <label for="residency">Fee classification</label>
+                            <label for="residency">Fee classification <span style="color:#dc2626;">*</span></label>
                             <select id="residency" name="residency" class="form-control" required>
                                 <option value="">-- Select fee classification --</option>
                                 <option value="boarder" <?=($student['residency']??'')==='boarder'?'selected':''?>>Boarder</option>
@@ -149,18 +150,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                 <input type="text" id="birth_certificate_no" name="birth_certificate_no" class="form-control" inputmode="numeric" pattern="\d{1,30}" maxlength="30" placeholder="Digits only" value="<?= htmlspecialchars($student['birth_certificate_no'] ?? '') ?>">
                             </div>
                             <div class="form-group">
-                                <label for="phone">Primary Mobile Phone Number (Safaricom format)</label>
+                                <label for="phone">Primary Mobile Phone Number (Safaricom format) <span style="color:#dc2626;">*</span></label>
                                 <input type="tel" id="phone" name="phone" class="form-control" inputmode="numeric" pattern="\d{10}" maxlength="10" required placeholder="10 digits e.g. 0712345678" value="<?= htmlspecialchars($student['phone'] ?? '') ?>">
                             </div>
                         </div>
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="email">Active Personal Email Address</label>
+                                <label for="email">Active Personal Email Address <span style="color:#dc2626;">*</span></label>
                                 <input type="email" id="email" name="email" class="form-control" required placeholder="e.g., scholar@example.com" value="<?= htmlspecialchars($student['email'] ?? '') ?>">
                             </div>
                             <div class="form-group">
-                                <label for="gender">Gender Identification</label>
+                                <label for="gender">Gender Identification <span style="color:#dc2626;">*</span></label>
                                 <select id="gender" name="gender" class="form-control" required>
                                     <option value="">-- Choose Gender --</option>
                                     <option value="Male" <?= ($student['gender'] ?? '') === 'Male' ? 'selected' : '' ?>>Male</option>
@@ -170,6 +171,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
 
                         <div style="margin-top: 15px; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 15px;">
+                            <button type="reset" class="btn-clear-profile">Clear</button>
                             <button type="submit" class="btn-save-profile">Save Metadata & Unlock Dashboard</button>
                         </div>
                     </form>

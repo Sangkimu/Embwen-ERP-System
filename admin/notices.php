@@ -49,6 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $notices = $pdo->query("SELECT n.notice_id, n.title, n.content, n.posted_on, u.full_name FROM notices n LEFT JOIN admin_users u ON u.admin_id = n.posted_by ORDER BY n.posted_on DESC")->fetchAll();
+$noticeDirectory = $pdo->query("SELECT notice_id, title, posted_on FROM notices ORDER BY posted_on DESC")->fetchAll();
+$selectedNoticeId = filter_input(INPUT_GET, 'notice_id', FILTER_VALIDATE_INT);
+$selectedNotice = null;
+if ($selectedNoticeId) {
+    foreach ($noticeDirectory as $notice) {
+        if ((int)$notice['notice_id'] === (int)$selectedNoticeId) {
+            $selectedNotice = $notice;
+            break;
+        }
+    }
+}
 ?>
 <!doctype html>
 <html lang="en">
@@ -68,6 +79,7 @@ $notices = $pdo->query("SELECT n.notice_id, n.title, n.content, n.posted_on, u.f
         .notice-form input, .notice-form textarea, .notice-form select { width:100%; box-sizing:border-box; padding:11px; border:1px solid #cbd5e1; border-radius:6px; font:inherit; }
         .notice-form textarea { min-height:110px; resize:vertical; }
         .publish-button, .delete-button { border:0; border-radius:6px; padding:9px 14px; font-weight:700; cursor:pointer; }
+        .clear-button { background:#e2e8f0; color:#1e293b; border:0; border-radius:6px; padding:9px 14px; font-weight:700; cursor:pointer; }
         .publish-button { background:#1e3d73; color:#fff; }
         .delete-button { margin-top:10px; background:#fee2e2; color:#b91c1c; }
         @media(max-width:700px){.sidebar{position:static;width:100%;min-height:auto;transform:none}.main{margin-left:0;width:100%}.content{padding:20px}.topbar{padding:0 18px}}
@@ -82,11 +94,36 @@ $notices = $pdo->query("SELECT n.notice_id, n.title, n.content, n.posted_on, u.f
             <h1>Notice Bulletin</h1>
             <p class="text-muted">Publish and manage notices for the college community.</p>
             <?php if ($message): ?><div class="alert <?=htmlspecialchars($messageClass)?>"><?=htmlspecialchars($message)?></div><?php endif; ?>
+
+            <div style="margin-top:18px; margin-bottom:12px;">
+                <label for="noticeDirectorySelector" style="display:block; margin-bottom:8px; font-size: 14px; font-weight: 600; color: #4a5568;">Notice directory</label>
+                <select id="noticeDirectorySelector" style="width:100%; max-width:420px; padding:10px 12px; border:1px solid #cbd5e0; border-radius:6px; background:#fff; font-size:14px;" onchange="window.location.href = 'notices.php?notice_id=' + this.value">
+                    <option value="">Select a notice</option>
+                    <?php foreach ($noticeDirectory as $notice): ?>
+                        <option value="<?= (int)$notice['notice_id'] ?>" <?= $selectedNoticeId && (int)$notice['notice_id'] === (int)$selectedNoticeId ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($notice['title']) ?> (<?= htmlspecialchars(date('d M Y', strtotime($notice['posted_on']))) ?>)
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <div id="noticeDirectoryDetail" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:16px; color:#4a5568; min-height:70px; display:flex; align-items:center;">
+                <?php if ($selectedNotice): ?>
+                    <strong><?= htmlspecialchars($selectedNotice['title']) ?></strong><br>
+                    Posted: <?= htmlspecialchars(date('d M Y', strtotime($selectedNotice['posted_on']))) ?>
+                <?php else: ?>
+                    Select a notice to view its posting date.
+                <?php endif; ?>
+            </div>
+
             <form method="post" class="notice-form">
                 <input type="text" name="title" placeholder="Notice title" required>
                 <textarea name="content" placeholder="Write notice content..." required></textarea>
                 <select name="target_audience"><option value="all">Everyone</option><option value="students">Students</option><option value="staff">Staff</option></select>
-                <button type="submit" class="publish-button">Publish Notice</button>
+                <div style="display:flex; gap:10px; justify-content:flex-end;">
+                    <button type="reset" class="clear-button">Clear</button>
+                    <button type="submit" class="publish-button">Publish Notice</button>
+                </div>
             </form>
             <?php foreach ($notices as $notice): ?>
                 <div class="notice">
