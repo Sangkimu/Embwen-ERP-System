@@ -5,6 +5,7 @@ if(!allowed(['finance'])){http_response_code(403);die("Access denied.");}
 
 $message = '';
 $messageClass = '';
+$mpesaMode = currentMpesaMode('live');
 
 $pdo->prepare("UPDATE mpesa_transactions SET status='failed', result_description=COALESCE(result_description,'Timed out or cancelled by user'), updated_at=NOW() WHERE status='pending' AND created_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)")->execute();
 $failedMpesaTxns = $pdo->query("SELECT mt.transaction_id, mt.amount, mt.phone_number, mt.status, mt.result_description, mt.updated_at, s.name AS student_name, c.course_code, fs.fee_type FROM mpesa_transactions mt JOIN students s ON s.student_id = mt.student_id JOIN fee_structure fs ON fs.fee_structure_id = mt.fee_structure_id JOIN courses c ON c.course_id = fs.course_id WHERE mt.status='failed' ORDER BY mt.updated_at DESC LIMIT 10")->fetchAll();
@@ -290,11 +291,20 @@ $dashboardLink = '../' . user()['home'];
     </main>
 </div>
 
+<div class="form-group" style="max-width:300px; margin: 20px 0 10px;">
+    <label for="mpesa_mode_selector">MPESA mode</label>
+    <select class="form-control" id="mpesa_mode_selector">
+        <option value="live" <?= $mpesaMode === 'live' ? 'selected' : '' ?>>Live / Sandbox</option>
+        <option value="offline" <?= $mpesaMode === 'offline' ? 'selected' : '' ?>>Offline test mode</option>
+    </select>
+</div>
+
 <div class="modal" id="paymentModal">
     <div class="modal-content">
         <h2>Record Payment</h2>
         <form method="post">
             <input type="hidden" name="action" id="paymentAction" value="record_payment">
+            <input type="hidden" name="mpesa_mode" id="mpesa_mode_hidden" value="<?= htmlspecialchars($mpesaMode) ?>">
             <div class="form-group"><label for="admission_search">Search student by Admission No.</label><input class="form-control" id="admission_search" type="text" placeholder="Enter admission number or name" autocomplete="off"></div>
             <div class="form-group"><label for="student_id">Student</label><select class="form-control" id="student_id" name="student_id" required><option value="">Select student</option><?php foreach($students as $student): ?><option value="<?= (int)$student['student_id'] ?>" data-course="<?= (int)($student['course_id'] ?? 0) ?>" data-residency="<?=htmlspecialchars($student['residency']??'')?>" data-search="<?=htmlspecialchars(strtolower($student['id_no'].' '.$student['name']))?>"><?= htmlspecialchars($student['id_no'].' - '.$student['name'].' ('.($student['course_code'] ?? 'Unassigned').' / '.($student['residency'] ?? 'Classification pending').' · '.($student['duration_months'] ?? '?').' months · '.($student['study_start_date'] ?? 'start pending').' to '.($student['expected_end_date'] ?? 'end pending').')') ?></option><?php endforeach; ?></select><small class="field-hint">The selected course, residency, and study period determine the applicable fee record.</small></div>
             <div class="form-group"><label for="fee_type_filter">Payment type</label><select class="form-control" id="fee_type_filter" name="fee_type_filter" required><option value="">Select fee type</option><option value="tuition">Tuition fee</option><option value="exam">Exam fee</option></select></div>
@@ -329,6 +339,18 @@ const submit=document.getElementById('submitPayment');
 const student=document.getElementById('student_id');
 const feeType=document.getElementById('fee_type_filter');
 const admissionSearch=document.getElementById('admission_search');
+const mpesaModeSelector=document.getElementById('mpesa_mode_selector');
+const mpesaModeHidden=document.getElementById('mpesa_mode_hidden');
+
+if (mpesaModeSelector && mpesaModeHidden) {
+  mpesaModeSelector.addEventListener('change', function(){
+    const value = this.value;
+    mpesaModeHidden.value = value;
+    const url = new URL(window.location.href);
+    url.searchParams.set('mpesa_mode', value);
+    window.history.replaceState({}, '', url);
+  });
+}
 
 const stkStatusNotice=document.getElementById('stkStatusNotice');
 if (stkStatusNotice) {

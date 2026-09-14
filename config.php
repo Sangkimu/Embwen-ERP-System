@@ -163,7 +163,27 @@ function studentFeeCategorySummary($pdo,$studentId,$year=null,$term=null){
  foreach($stmt as $row){$summary[$row['category']]=['billed'=>(float)$row['billed'],'paid'=>(float)$row['paid'],'balance'=>max(0,(float)$row['billed']-(float)$row['paid'])];}
  return $summary;
 }
+function currentMpesaMode($fallback='live'){
+ $candidates=[
+  $_POST['mpesa_mode'] ?? null,
+  $_GET['mpesa_mode'] ?? null,
+  getenv('MPESA_MODE'),
+  getenv('MPESA_OFFLINE'),
+  $_ENV['MPESA_MODE'] ?? null,
+  $_SERVER['MPESA_MODE'] ?? null,
+  $_SERVER['HTTP_X_MPESA_MODE'] ?? null
+ ];
+ foreach($candidates as $candidate){
+  if($candidate===null || $candidate===''){continue;}
+  $mode=strtolower(trim((string)$candidate));
+  if($mode==='1' || $mode==='on' || $mode==='true' || $mode==='yes'){return 'offline';}
+  if($mode==='0' || $mode==='off' || $mode==='false' || $mode==='no'){return 'live';}
+  if(in_array($mode,['offline','online','live','test','sandbox','demo'],true)){return $mode;}
+ }
+ return $fallback;
+}
 function mpesaConfig(){
+ $mode=currentMpesaMode('live');
  return [
   'consumer_key'=>getenv('MPESA_CONSUMER_KEY') ?: '',
   'consumer_secret'=>getenv('MPESA_CONSUMER_SECRET') ?: '',
@@ -171,11 +191,11 @@ function mpesaConfig(){
   'passkey'=>getenv('MPESA_PASSKEY') ?: '',
   'callback_url'=>getenv('MPESA_CALLBACK_URL') ?: '',
   'base_url'=>getenv('MPESA_BASE_URL') ?: 'https://sandbox.safaricom.co.ke',
-  'mode'=>strtolower((string)(getenv('MPESA_MODE') ?: getenv('MPESA_OFFLINE') ?: 'live'))
+  'mode'=>$mode
  ];
 }
 function mpesaIsOffline(){
- $mode=mpesaConfig()['mode'] ?? 'live';
+ $mode=currentMpesaMode('live');
  $offlineModes=['offline','test','sandbox','demo'];
  $missingCredentials=empty(getenv('MPESA_CONSUMER_KEY')) || empty(getenv('MPESA_CONSUMER_SECRET')) || empty(getenv('MPESA_SHORTCODE')) || empty(getenv('MPESA_PASSKEY')) || empty(getenv('MPESA_CALLBACK_URL'));
  return in_array($mode,$offlineModes,true) || $missingCredentials;
