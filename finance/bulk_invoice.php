@@ -58,7 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
             // Prepared insert line entry mock placeholder tracking mechanism
             // Note: Since original schema posts payments directly against structure rules, we record a $0 placeholder payment 
             // instance to safely flag that this specific block has already been assigned/billed to the target student ledger profile.
-            $insertInvoiceStmt = $pdo->prepare("INSERT INTO fee_payments (student_id, fee_structure_id, amount_paid, payment_date, payment_method, receipt_no, reference_no, received_by) VALUES (?, ?, 0.00, CURDATE(), 'online', ?, 'INVOICE_GEN', ?)");
+            $insertInvoiceStmt = $pdo->prepare("INSERT INTO fee_payments (student_id, fee_structure_id, amount_paid, payment_date, payment_method, receipt_no, reference_no, received_by) VALUES (?, ?, 0.00, CURRENT_DATE, 'online', ?, 'INVOICE_GEN', ?)");
 
             $currentClerkId = user()['admin_id'] ?? user()['id'] ?? 1;
 

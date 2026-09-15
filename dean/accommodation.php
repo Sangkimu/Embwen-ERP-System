@@ -11,7 +11,15 @@ $message = "";
 $studentSearch = trim($_GET['student_search'] ?? '');
 
 if (!tableExists($pdo, 'hostel_allocations')) {
-    $pdo->exec("CREATE TABLE hostel_allocations (
+    $hostelSchema = dbDriver() === 'sqlite' ? "CREATE TABLE hostel_allocations (
+        allocation_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        student_id INTEGER NOT NULL,
+        hostel_name TEXT NOT NULL,
+        room_no TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'allocated',
+        allocated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        released_at TEXT NULL
+    )" : "CREATE TABLE hostel_allocations (
         allocation_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
         student_id INT UNSIGNED NOT NULL,
         hostel_name VARCHAR(100) NOT NULL,
@@ -23,7 +31,8 @@ if (!tableExists($pdo, 'hostel_allocations')) {
         KEY idx_hostel_status_room (hostel_name, room_no, status),
         KEY idx_hostel_student_status (student_id, status),
         CONSTRAINT fk_hostel_student FOREIGN KEY (student_id) REFERENCES students (student_id) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    $pdo->exec($hostelSchema);
 }
 
 // Handle allocation request submission
@@ -35,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $room_no     = trim($_POST['room_no'] ?? '');
 
     if ($action === 'release' && $allocationId) {
-        $release = $pdo->prepare("UPDATE hostel_allocations SET status='released', released_at=NOW() WHERE allocation_id=? AND status='allocated'");
+        $release = $pdo->prepare("UPDATE hostel_allocations SET status='released', released_at=CURRENT_TIMESTAMP WHERE allocation_id=? AND status='allocated'");
         $release->execute([$allocationId]);
         $message = $release->rowCount() ? "<div class='alert-success'>Room allocation released successfully.</div>" : "<div class='alert-danger'>This allocation is already released or does not exist.</div>";
     } elseif (!empty($student_id) && !empty($hostel_name) && !empty($room_no)) {

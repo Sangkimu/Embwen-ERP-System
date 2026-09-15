@@ -1,5 +1,18 @@
 ROLE-BASED VOCATIONAL COLLEGE ERP
 
+LOCAL SQLITE DATABASE
+
+The application uses SQLite by default for local hosting. On first startup,
+it creates data/vocational_erp.sqlite and initializes it from
+database_sqlite.sql. XAMPP PHP must have PDO SQLite enabled (pdo_sqlite).
+
+To use the legacy MySQL database instead, set DB_DRIVER=mysql in the Apache
+environment before starting PHP. The existing MySQL settings remain localhost,
+database vocational_erp, user root, and an empty password.
+
+To reset a local SQLite installation, stop Apache and delete
+data/vocational_erp.sqlite. The database will be recreated on the next request.
+
 This version changes the ERP to module-specific authentication.
 
 Modules:

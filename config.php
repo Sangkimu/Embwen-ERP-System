@@ -1,13 +1,36 @@
 <?php
 session_start();
-$host="localhost"; $db="vocational_erp"; $user="root"; $pass="";
+$dbDriver = strtolower((string)(getenv('DB_DRIVER') ?: 'sqlite'));
+$sqlitePath = __DIR__ . DIRECTORY_SEPARATOR . 'data' . DIRECTORY_SEPARATOR . 'vocational_erp.sqlite';
+if ($dbDriver === 'sqlite') {
+ $dataDir = dirname($sqlitePath);
+ if (!is_dir($dataDir)) { mkdir($dataDir, 0775, true); }
+ $dsn = 'sqlite:' . $sqlitePath;
+ $dbUser = null; $dbPass = null;
+} else {
+ $host="localhost"; $db="vocational_erp"; $dbUser="root"; $dbPass="";
+ $dsn="mysql:host=$host;dbname=$db;charset=utf8mb4";
+}
 try {
- $pdo=new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4",$user,$pass,[
+ $pdo=new PDO($dsn,$dbUser,$dbPass,[
   PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,
   PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC
  ]);
+ if ($dbDriver === 'sqlite') {
+  $pdo->exec('PRAGMA foreign_keys = ON');
+  $schemaPath = __DIR__ . DIRECTORY_SEPARATOR . 'database_sqlite.sql';
+  if (is_file($schemaPath) && !tableExists($pdo, 'admin_users')) {
+   $schema = file_get_contents($schemaPath);
+   if ($schema === false || $pdo->exec($schema) === false) {
+    throw new RuntimeException('SQLite schema initialization failed.');
+   }
+  }
+ }
 } catch(PDOException $e){ die("Database connection failed."); }
 function ensureModuleUsersSchema($pdo){
+    if (dbDriver() === 'sqlite') {
+        return;
+    }
     try {
         if (!tableExists($pdo, 'module_users')) {
             return;
@@ -79,9 +102,17 @@ function validBirthCertificateNumber($number){ return preg_match('/^\d{1,30}$/',
 function user(){ return $_SESSION['user'] ?? null; }
 function allowed($modules=[]){ return in_array(user()['module'] ?? '', $modules, true) || (user()['role'] ?? '')==='super_admin'; }
 function tableExists($pdo,$table){
+ if (dbDriver() === 'sqlite') {
+  $stmt = $pdo->prepare("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?");
+  $stmt->execute([$table]);
+  return (bool)$stmt->fetchColumn();
+ }
  $stmt=$pdo->prepare("SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?");
  $stmt->execute([$table]);
  return (bool)$stmt->fetchColumn();
+}
+function dbDriver(){
+ return strtolower((string)(getenv('DB_DRIVER') ?: 'sqlite'));
 }
 function studentProfileComplete($student){
  $hasNationalId = validIdentityNumber($student['national_id'] ?? '', 'national_id');
@@ -149,9 +180,20 @@ function generateStudentIdNumber($pdo, $courseId = null){
 
     $year = date('y');
     $pattern = $base . '/' . $year . '/%';
-    $stmt = $pdo->prepare("SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(id_no, '/', -1) AS UNSIGNED)), 0) + 1 FROM students WHERE id_no LIKE ?");
-    $stmt->execute([$pattern]);
-    $sequence = (int)$stmt->fetchColumn();
+    if (dbDriver() === 'sqlite') {
+        $stmt = $pdo->prepare('SELECT id_no FROM students WHERE id_no LIKE ?');
+        $stmt->execute([$pattern]);
+        $sequence = 0;
+        foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $idNo) {
+            $parts = explode('/', (string)$idNo);
+            $sequence = max($sequence, (int)end($parts));
+        }
+        $sequence++;
+    } else {
+        $stmt = $pdo->prepare("SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(id_no, '/', -1) AS UNSIGNED)), 0) + 1 FROM students WHERE id_no LIKE ?");
+        $stmt->execute([$pattern]);
+        $sequence = (int)$stmt->fetchColumn();
+    }
 
     return sprintf('%s/%s/%03d', $base, $year, $sequence);
 }

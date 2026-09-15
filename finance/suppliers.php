@@ -42,7 +42,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action'])) {
                 
                 // Save parent purchase record tracking entry
                 $estCost = $quantity * $unitPrice;
-                $stmt1 = $pdo->prepare("INSERT INTO purchase_orders (po_number, supplier_id, order_date, estimated_cost, delivery_status, created_by) VALUES (?, ?, CURDATE(), ?, 'Ordered', ?)");
+                $stmt1 = $pdo->prepare("INSERT INTO purchase_orders (po_number, supplier_id, order_date, estimated_cost, delivery_status, created_by) VALUES (?, ?, CURRENT_DATE, ?, 'Ordered', ?)");
                 $stmt1->execute([$generatedPoNo, $supplierId, $estCost, $clerkId]);
                 $poId = $pdo->lastInsertId();
 

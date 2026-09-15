@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $content = trim((string)($_POST['content'] ?? ''));
             $audience = in_array($_POST['target_audience'] ?? '', ['all', 'students', 'staff'], true) ? $_POST['target_audience'] : 'all';
             if ($title === '' || $content === '') { throw new InvalidArgumentException('Enter both a title and notice content.'); }
-            $stmt = $pdo->prepare('INSERT INTO notices (title, content, target_audience, posted_by, posted_on) VALUES (?, ?, ?, ?, NOW())');
+            $stmt = $pdo->prepare('INSERT INTO notices (title, content, target_audience, posted_by, posted_on) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)');
             $stmt->execute([$title, $content, $audience, adminNoticeAuthorId($pdo, user() ?? [])]);
             $message = 'Notice published successfully.';
             $messageClass = 'alert-success';

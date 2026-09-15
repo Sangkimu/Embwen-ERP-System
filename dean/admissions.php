@@ -17,7 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $pdo->beginTransaction();
-            $applicationStmt = $pdo->prepare('SELECT a.*, c.course_code, c.course_name FROM admissions a LEFT JOIN courses c ON c.course_id=a.course_id WHERE a.admission_id=? FOR UPDATE');
+            $applicationStmt = $pdo->prepare('SELECT a.*, c.course_code, c.course_name FROM admissions a LEFT JOIN courses c ON c.course_id=a.course_id WHERE a.admission_id=?');
             $applicationStmt->execute([$admissionId]);
             $application = $applicationStmt->fetch();
             if (!$application) { throw new Exception('Application not found.'); }
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $studentId = (int)$pdo->lastInsertId();
             }
 
-            $update = $pdo->prepare('UPDATE admissions SET admission_status=?, decision_date=CURDATE(), student_id=?, decided_by=? WHERE admission_id=?');
+            $update = $pdo->prepare('UPDATE admissions SET admission_status=?, decision_date=CURRENT_DATE, student_id=?, decided_by=? WHERE admission_id=?');
             $update->execute([$decision, $studentId, (int)(user()['id'] ?? 0), $admissionId]);
             $pdo->commit();
             $message = $decision === 'admitted' ? 'Applicant admitted and added to the student registry as ' . $admissionNumber . '.' : 'Application rejected successfully.';

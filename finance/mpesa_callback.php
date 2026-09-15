@@ -14,7 +14,7 @@ $resultCode=(int)($callback['ResultCode'] ?? 1);
 $resultDescription=(string)($callback['ResultDesc'] ?? 'Unknown result');
 try{
  $pdo->beginTransaction();
- $stmt=$pdo->prepare('SELECT * FROM mpesa_transactions WHERE checkout_request_id=? FOR UPDATE');
+ $stmt=$pdo->prepare('SELECT * FROM mpesa_transactions WHERE checkout_request_id=?');
  $stmt->execute([$checkoutRequestId]);
  $transaction=$stmt->fetch();
  if(!$transaction){throw new Exception('Transaction not found.');}
@@ -27,7 +27,7 @@ try{
   if(!$receipt){throw new Exception('Successful callback did not include an M-Pesa receipt.');}
   $clerk=$pdo->query("SELECT admin_id FROM admin_users WHERE status='active' ORDER BY admin_id LIMIT 1")->fetchColumn();
   if(!$clerk){throw new Exception('No active finance clerk is available.');}
-  $insert=$pdo->prepare("INSERT INTO fee_payments (student_id,fee_structure_id,amount_paid,payment_date,payment_method,receipt_no,reference_no,received_by) VALUES (?,?,?,CURDATE(),'mpesa',?,?,?)");
+ $insert=$pdo->prepare("INSERT INTO fee_payments (student_id,fee_structure_id,amount_paid,payment_date,payment_method,receipt_no,reference_no,received_by) VALUES (?,?,?,CURRENT_DATE,'mpesa',?,?,?)");
   $insert->execute([$transaction['student_id'],$transaction['fee_structure_id'],$transaction['amount'],$receipt,$checkoutRequestId,$clerk]);
   $status='completed';
  }else{$status='failed';}

@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $authorId = deanNoticeAuthorId($pdo, user() ?? []);
-            $stmt = $pdo->prepare('INSERT INTO notices (title, content, target_audience, posted_by, posted_on) VALUES (?, ?, ?, ?, NOW())');
+            $stmt = $pdo->prepare('INSERT INTO notices (title, content, target_audience, posted_by, posted_on) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)');
             $stmt->execute([$title, $content, $audience, $authorId]);
             $message = 'Notice published successfully to the campus content board.';
             $messageClass = 'alert-success';

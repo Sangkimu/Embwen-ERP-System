@@ -7,7 +7,7 @@ $message = '';
 $messageClass = '';
 $mpesaMode = currentMpesaMode('live');
 
-$pdo->prepare("UPDATE mpesa_transactions SET status='failed', result_description=COALESCE(result_description,'Timed out or cancelled by user'), updated_at=NOW() WHERE status='pending' AND created_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)")->execute();
+$pdo->prepare("UPDATE mpesa_transactions SET status='failed', result_description=COALESCE(result_description,'Timed out or cancelled by user'), updated_at=CURRENT_TIMESTAMP WHERE status='pending' AND created_at < datetime('now', '-10 minutes')")->execute();
 $failedMpesaTxns = $pdo->query("SELECT mt.transaction_id, mt.amount, mt.phone_number, mt.status, mt.result_description, mt.updated_at, s.name AS student_name, c.course_code, fs.fee_type FROM mpesa_transactions mt JOIN students s ON s.student_id = mt.student_id JOIN fee_structure fs ON fs.fee_structure_id = mt.fee_structure_id JOIN courses c ON c.course_id = fs.course_id WHERE mt.status='failed' ORDER BY mt.updated_at DESC LIMIT 10")->fetchAll();
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST['action'] ?? '') === 'initiate_mpesa') {
@@ -35,7 +35,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && ($_POST['action'] ?? '') === 'initi
         if (mpesaIsOffline()) {
             $receiptNo = 'OFFLINE-' . time();
             $stmt->execute([$studentId, $structureId, $amountPaid, $normalizedPhone, $accountReference, $response['CheckoutRequestID'], $response['MerchantRequestID'] ?? null, 'completed', $receiptNo, 0, 'Offline MPESA test mode accepted.']);
-            $feeInsert = $pdo->prepare("INSERT INTO fee_payments (student_id,fee_structure_id,amount_paid,payment_date,payment_method,receipt_no,reference_no,received_by) VALUES (?,?,?,CURDATE(),'mpesa',?,?,?)");
+            $feeInsert = $pdo->prepare("INSERT INTO fee_payments (student_id,fee_structure_id,amount_paid,payment_date,payment_method,receipt_no,reference_no,received_by) VALUES (?,?,?,CURRENT_DATE,'mpesa',?,?,?)");
             $clerk = $pdo->query("SELECT admin_id FROM admin_users WHERE status='active' ORDER BY admin_id LIMIT 1")->fetchColumn();
             if (!$clerk) { throw new Exception('No active finance clerk is available for local offline payment logging.'); }
             $feeInsert->execute([$studentId,$structureId,$amountPaid,$receiptNo,$response['CheckoutRequestID'],$clerk]);
@@ -93,7 +93,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['action']) && $_POST['
                 throw new Exception("Duplicate Receipt: Reference index number '{$receiptNo}' already exists in ledger logs.");
             }
 
-            $stmt = $pdo->prepare("INSERT INTO fee_payments (student_id, fee_structure_id, amount_paid, payment_date, payment_method, receipt_no, received_by) VALUES (?, ?, ?, CURDATE(), ?, ?, ?)");
+            $stmt = $pdo->prepare("INSERT INTO fee_payments (student_id, fee_structure_id, amount_paid, payment_date, payment_method, receipt_no, received_by) VALUES (?, ?, ?, CURRENT_DATE, ?, ?, ?)");
             $stmt->execute([$studentId, $structureId, $amountPaid, $paymentMethod, $receiptNo, $receivedBy]);
 
             $pdo->commit();
