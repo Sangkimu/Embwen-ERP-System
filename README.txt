@@ -1,3 +1,4 @@
+[![Netlify Status](https://api.netlify.com/api/v1/badges/1eef5c51-1980-42cc-868a-4d653cf7e8ad/deploy-status)](https://app.netlify.com/projects/wonderful-kangaroo-a780e7/deploys)
 ROLE-BASED VOCATIONAL COLLEGE ERP
 
 LOCAL SQLITE DATABASE
